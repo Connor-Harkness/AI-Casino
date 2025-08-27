@@ -200,6 +200,11 @@ class BlackjackGame {
         };
     }
 
+    getSpectatorState() {
+        // Spectators see the same as public state - no hidden information for spectators in blackjack
+        return this.getPublicState();
+    }
+
     // Bot AI
     makeBotMove(botId) {
         const hand = this.playerHands[botId];

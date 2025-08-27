@@ -189,6 +189,148 @@
             border-radius: 10px;
             border-left: 4px solid #ff6b6b;
         }
+        
+        .audit-tabs {
+            margin-bottom: 20px;
+        }
+        
+        .audit-tabs button {
+            margin-right: 10px;
+        }
+        
+        .audit-content {
+            margin-top: 20px;
+        }
+        
+        .audit-filters {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-row input,
+        .filter-row select {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            min-width: 120px;
+        }
+        
+        .audit-table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .pagination {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .pagination button {
+            margin: 0 5px;
+        }
+        
+        #events-timeline {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .timeline-event {
+            background: rgba(255,255,255,0.1);
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .event-type {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .event-time {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .event-game {
+            font-size: 14px;
+            color: #ffd700;
+        }
+        
+        .event-data {
+            font-family: monospace;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        
+        .badge-bet {
+            background: #ff6b6b;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .badge-win {
+            background: #4caf50;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .badge-loss {
+            background: #f44336;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .badge-admin_adjustment {
+            background: #2196f3;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .positive {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        
+        .negative {
+            color: #f44336;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -267,17 +409,92 @@
         <!-- Audit Section -->
         <div id="audit-section" class="panel" style="display: none;">
             <h2>Audit Logs</h2>
-            <p>Transaction and game history for compliance monitoring.</p>
+            <p>Comprehensive transaction and game history for compliance monitoring.</p>
             
-            <div class="form-group">
-                <label>Filter by User:</label>
-                <input type="text" id="audit-user-filter" placeholder="Enter username">
+            <div class="audit-tabs">
+                <button class="btn" id="transactions-tab" onclick="switchAuditTab('transactions')">Transactions</button>
+                <button class="btn btn-secondary" id="events-tab" onclick="switchAuditTab('events')">Game Events</button>
             </div>
             
-            <button class="btn" onclick="loadAuditLogs()">Load Audit Logs</button>
+            <!-- Transactions Audit -->
+            <div id="transactions-audit" class="audit-content">
+                <h3>Transaction History</h3>
+                
+                <div class="audit-filters">
+                    <div class="filter-row">
+                        <input type="text" id="tx-user-filter" placeholder="Username">
+                        <select id="tx-type-filter">
+                            <option value="">All Types</option>
+                            <option value="bet">Bet</option>
+                            <option value="win">Win</option>
+                            <option value="loss">Loss</option>
+                            <option value="admin_adjustment">Admin Adjustment</option>
+                        </select>
+                        <input type="date" id="tx-start-date">
+                        <input type="date" id="tx-end-date">
+                        <button class="btn" onclick="loadTransactionAudit()">Filter</button>
+                    </div>
+                </div>
+                
+                <div class="audit-table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>User</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Balance Before</th>
+                                <th>Balance After</th>
+                                <th>Game</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-tbody">
+                            <tr>
+                                <td colspan="8">Click Filter to load transactions</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="pagination" id="tx-pagination" style="display: none;">
+                    <button class="btn btn-secondary" onclick="changeTxPage(-1)">Previous</button>
+                    <span id="tx-page-info">Page 1</span>
+                    <button class="btn btn-secondary" onclick="changeTxPage(1)">Next</button>
+                </div>
+            </div>
             
-            <div id="audit-logs">
-                <!-- Audit logs will be loaded here -->
+            <!-- Game Events Audit -->
+            <div id="events-audit" class="audit-content" style="display: none;">
+                <h3>Game Events Timeline</h3>
+                
+                <div class="audit-filters">
+                    <div class="filter-row">
+                        <input type="number" id="event-game-filter" placeholder="Game ID">
+                        <select id="event-type-filter">
+                            <option value="">All Events</option>
+                            <option value="game_start">Game Start</option>
+                            <option value="player_join">Player Join</option>
+                            <option value="bet_placed">Bet Placed</option>
+                            <option value="game_action">Game Action</option>
+                            <option value="game_end">Game End</option>
+                        </select>
+                        <input type="date" id="event-start-date">
+                        <input type="date" id="event-end-date">
+                        <button class="btn" onclick="loadEventAudit()">Filter</button>
+                    </div>
+                </div>
+                
+                <div id="events-timeline">
+                    Click Filter to load game events
+                </div>
+                
+                <div class="pagination" id="event-pagination" style="display: none;">
+                    <button class="btn btn-secondary" onclick="changeEventPage(-1)">Previous</button>
+                    <span id="event-page-info">Page 1</span>
+                    <button class="btn btn-secondary" onclick="changeEventPage(1)">Next</button>
+                </div>
             </div>
         </div>
     </div>
@@ -455,6 +672,165 @@
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
             currentEditUserId = null;
+        }
+        
+        // Audit functionality
+        let currentTxPage = 1;
+        let currentEventPage = 1;
+        let currentAuditTab = 'transactions';
+        
+        function switchAuditTab(tab) {
+            // Hide all audit content
+            document.querySelectorAll('.audit-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Reset tab buttons
+            document.getElementById('transactions-tab').className = 'btn btn-secondary';
+            document.getElementById('events-tab').className = 'btn btn-secondary';
+            
+            // Show selected content and update button
+            document.getElementById(`${tab}-audit`).style.display = 'block';
+            document.getElementById(`${tab}-tab`).className = 'btn';
+            
+            currentAuditTab = tab;
+        }
+        
+        async function loadTransactionAudit() {
+            try {
+                const username = document.getElementById('tx-user-filter').value;
+                const type = document.getElementById('tx-type-filter').value;
+                const startDate = document.getElementById('tx-start-date').value;
+                const endDate = document.getElementById('tx-end-date').value;
+                
+                const params = new URLSearchParams({
+                    page: currentTxPage,
+                    limit: 50
+                });
+                
+                if (username) params.append('userId', username);
+                if (type) params.append('type', type);
+                if (startDate) params.append('startDate', startDate);
+                if (endDate) params.append('endDate', endDate);
+                
+                const response = await fetch(`/api/admin/audit/transactions?${params}`);
+                if (!response.ok) throw new Error('Failed to fetch transactions');
+                
+                const transactions = await response.json();
+                renderTransactions(transactions);
+                
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+                document.getElementById('transactions-tbody').innerHTML = 
+                    '<tr><td colspan="8">Error loading transactions</td></tr>';
+            }
+        }
+        
+        function renderTransactions(transactions) {
+            const tbody = document.getElementById('transactions-tbody');
+            
+            if (transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8">No transactions found</td></tr>';
+                document.getElementById('tx-pagination').style.display = 'none';
+                return;
+            }
+            
+            tbody.innerHTML = transactions.map(tx => `
+                <tr>
+                    <td>${new Date(tx.created_at).toLocaleString()}</td>
+                    <td>${tx.username}</td>
+                    <td><span class="badge-${tx.type}">${tx.type}</span></td>
+                    <td class="${tx.amount >= 0 ? 'positive' : 'negative'}">$${tx.amount}</td>
+                    <td>$${tx.balance_before}</td>
+                    <td>$${tx.balance_after}</td>
+                    <td>${tx.game_type || 'N/A'}</td>
+                    <td>${tx.description || ''}</td>
+                </tr>
+            `).join('');
+            
+            // Show pagination if we have max results
+            if (transactions.length === 50) {
+                document.getElementById('tx-pagination').style.display = 'block';
+                document.getElementById('tx-page-info').textContent = `Page ${currentTxPage}`;
+            }
+        }
+        
+        async function loadEventAudit() {
+            try {
+                const gameId = document.getElementById('event-game-filter').value;
+                const eventType = document.getElementById('event-type-filter').value;
+                const startDate = document.getElementById('event-start-date').value;
+                const endDate = document.getElementById('event-end-date').value;
+                
+                const params = new URLSearchParams({
+                    page: currentEventPage,
+                    limit: 50
+                });
+                
+                if (gameId) params.append('gameId', gameId);
+                if (eventType) params.append('eventType', eventType);
+                if (startDate) params.append('startDate', startDate);
+                if (endDate) params.append('endDate', endDate);
+                
+                const response = await fetch(`/api/admin/audit/events?${params}`);
+                if (!response.ok) throw new Error('Failed to fetch events');
+                
+                const events = await response.json();
+                renderEvents(events);
+                
+            } catch (error) {
+                console.error('Error loading events:', error);
+                document.getElementById('events-timeline').innerHTML = 'Error loading events';
+            }
+        }
+        
+        function renderEvents(events) {
+            const timeline = document.getElementById('events-timeline');
+            
+            if (events.length === 0) {
+                timeline.innerHTML = 'No events found';
+                document.getElementById('event-pagination').style.display = 'none';
+                return;
+            }
+            
+            const eventsHtml = events.map(event => `
+                <div class="timeline-event">
+                    <div class="event-header">
+                        <div class="event-type">${event.event_type}</div>
+                        <div>
+                            <div class="event-game">Game #${event.game_id} (${event.game_type})</div>
+                            <div class="event-time">${new Date(event.timestamp).toLocaleString()}</div>
+                        </div>
+                    </div>
+                    <div>Room: ${event.room_id}</div>
+                    <div>Host: ${event.host_username}</div>
+                    ${event.event_data ? `<div class="event-data">${JSON.stringify(event.event_data, null, 2)}</div>` : ''}
+                </div>
+            `).join('');
+            
+            timeline.innerHTML = eventsHtml;
+            
+            // Show pagination if we have max results
+            if (events.length === 50) {
+                document.getElementById('event-pagination').style.display = 'block';
+                document.getElementById('event-page-info').textContent = `Page ${currentEventPage}`;
+            }
+        }
+        
+        function changeTxPage(direction) {
+            const newPage = currentTxPage + direction;
+            if (newPage >= 1) {
+                currentTxPage = newPage;
+                loadTransactionAudit();
+            }
+        }
+        
+        function changeEventPage(direction) {
+            const newPage = currentEventPage + direction;
+            if (newPage >= 1) {
+                currentEventPage = newPage;
+                loadEventAudit();
+            }
         }
         
         // Close modals when clicking outside

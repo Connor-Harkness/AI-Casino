@@ -259,6 +259,11 @@ class RouletteGame {
         };
     }
 
+    getSpectatorState() {
+        // Spectators see the same as public state - no hidden information in roulette
+        return this.getPublicState();
+    }
+
     // Bot AI for placing bets
     makeBotBets(botId) {
         const bot = this.players.find(p => p.id === botId);

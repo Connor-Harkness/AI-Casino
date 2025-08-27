@@ -177,6 +177,76 @@ class Database {
         });
     }
 
+    // Game management methods
+    async createGameSession(roomId, gameType, hostUserId, gameData = null) {
+        return new Promise((resolve, reject) => {
+            const stmt = this.db.prepare(`
+                INSERT INTO games (room_id, type, host_user_id, started_at, game_data)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+            `);
+            stmt.run([roomId, gameType, hostUserId, JSON.stringify(gameData)], function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(this.lastID);
+                }
+            });
+            stmt.finalize();
+        });
+    }
+
+    async endGameSession(gameId, finalGameData = null) {
+        return new Promise((resolve, reject) => {
+            const stmt = this.db.prepare(`
+                UPDATE games 
+                SET ended_at = CURRENT_TIMESTAMP, game_data = ?
+                WHERE id = ?
+            `);
+            stmt.run([JSON.stringify(finalGameData), gameId], function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(this.changes);
+                }
+            });
+            stmt.finalize();
+        });
+    }
+
+    async recordGameParticipant(gameId, userId, isBot = false, position = null, finalBalance = null, winnings = 0) {
+        return new Promise((resolve, reject) => {
+            const stmt = this.db.prepare(`
+                INSERT INTO game_participants (game_id, user_id, is_bot, position, final_balance, winnings)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `);
+            stmt.run([gameId, userId, isBot, position, finalBalance, winnings], function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(this.lastID);
+                }
+            });
+            stmt.finalize();
+        });
+    }
+
+    async recordGameEvent(gameId, eventType, eventData = null) {
+        return new Promise((resolve, reject) => {
+            const stmt = this.db.prepare(`
+                INSERT INTO game_events (game_id, event_type, event_data)
+                VALUES (?, ?, ?)
+            `);
+            stmt.run([gameId, eventType, JSON.stringify(eventData)], function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(this.lastID);
+                }
+            });
+            stmt.finalize();
+        });
+    }
+
     close() {
         this.db.close((err) => {
             if (err) {

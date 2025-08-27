@@ -63,6 +63,10 @@ app.get('/admin', requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../client/admin.html'));
 });
 
+app.get('/history', requireAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/history.html'));
+});
+
 app.get('/games/:gameType', (req, res) => {
     const gameType = req.params.gameType;
     const validGames = ['blackjack', 'roulette', 'poker'];
@@ -156,6 +160,113 @@ app.get('/api/leaderboard', async (req, res) => {
     }
 });
 
+// Game History API Routes
+app.get('/api/games/history', requireAuth, async (req, res) => {
+    try {
+        const { gameType, page = 1, limit = 20 } = req.query;
+        const offset = (page - 1) * limit;
+        
+        let whereClause = 'WHERE g.ended_at IS NOT NULL';
+        const params = [];
+        
+        if (gameType) {
+            whereClause += ' AND g.type = ?';
+            params.push(gameType);
+        }
+        
+        const query = `
+            SELECT 
+                g.id, g.type, g.room_id, g.started_at, g.ended_at,
+                u.username as host_username,
+                COUNT(gp.id) as player_count
+            FROM games g
+            LEFT JOIN users u ON g.host_user_id = u.id
+            LEFT JOIN game_participants gp ON g.id = gp.game_id
+            ${whereClause}
+            GROUP BY g.id
+            ORDER BY g.ended_at DESC
+            LIMIT ? OFFSET ?
+        `;
+        params.push(parseInt(limit), offset);
+        
+        const games = await new Promise((resolve, reject) => {
+            db.db.all(query, params, (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+        
+        res.json(games);
+    } catch (error) {
+        console.error('Game history error:', error);
+        res.status(500).json({ error: 'Failed to fetch game history' });
+    }
+});
+
+app.get('/api/games/:gameId/details', requireAuth, async (req, res) => {
+    try {
+        const { gameId } = req.params;
+        
+        // Get game details
+        const game = await new Promise((resolve, reject) => {
+            db.db.get(
+                'SELECT * FROM games WHERE id = ?',
+                [gameId],
+                (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row);
+                }
+            );
+        });
+        
+        if (!game) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+        
+        // Get participants
+        const participants = await new Promise((resolve, reject) => {
+            db.db.all(
+                `SELECT gp.*, u.username 
+                 FROM game_participants gp 
+                 LEFT JOIN users u ON gp.user_id = u.id 
+                 WHERE gp.game_id = ?`,
+                [gameId],
+                (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows);
+                }
+            );
+        });
+        
+        // Get game events
+        const events = await new Promise((resolve, reject) => {
+            db.db.all(
+                'SELECT * FROM game_events WHERE game_id = ? ORDER BY timestamp ASC',
+                [gameId],
+                (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows.map(row => ({
+                        ...row,
+                        event_data: row.event_data ? JSON.parse(row.event_data) : null
+                    })));
+                }
+            );
+        });
+        
+        res.json({
+            game: {
+                ...game,
+                game_data: game.game_data ? JSON.parse(game.game_data) : null
+            },
+            participants,
+            events
+        });
+    } catch (error) {
+        console.error('Game details error:', error);
+        res.status(500).json({ error: 'Failed to fetch game details' });
+    }
+});
+
 // Admin API Routes
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
     try {
@@ -204,6 +315,123 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     } catch (error) {
         console.error('Stats error:', error);
         res.status(500).json({ error: 'Failed to fetch statistics' });
+    }
+});
+
+// Admin Audit API Routes  
+app.get('/api/admin/audit/transactions', requireAdmin, async (req, res) => {
+    try {
+        const { userId, page = 1, limit = 50, type, startDate, endDate } = req.query;
+        const offset = (page - 1) * limit;
+        
+        let whereClause = 'WHERE 1=1';
+        const params = [];
+        
+        if (userId) {
+            whereClause += ' AND t.user_id = ?';
+            params.push(userId);
+        }
+        
+        if (type) {
+            whereClause += ' AND t.type = ?';
+            params.push(type);
+        }
+        
+        if (startDate) {
+            whereClause += ' AND t.created_at >= ?';
+            params.push(startDate);
+        }
+        
+        if (endDate) {
+            whereClause += ' AND t.created_at <= ?';
+            params.push(endDate);
+        }
+        
+        const query = `
+            SELECT 
+                t.*,
+                u.username,
+                g.type as game_type
+            FROM transactions t
+            LEFT JOIN users u ON t.user_id = u.id
+            LEFT JOIN games g ON t.game_id = g.id
+            ${whereClause}
+            ORDER BY t.created_at DESC
+            LIMIT ? OFFSET ?
+        `;
+        params.push(parseInt(limit), offset);
+        
+        const transactions = await new Promise((resolve, reject) => {
+            db.db.all(query, params, (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+        
+        res.json(transactions);
+    } catch (error) {
+        console.error('Audit transactions error:', error);
+        res.status(500).json({ error: 'Failed to fetch transactions' });
+    }
+});
+
+app.get('/api/admin/audit/events', requireAdmin, async (req, res) => {
+    try {
+        const { gameId, page = 1, limit = 50, eventType, startDate, endDate } = req.query;
+        const offset = (page - 1) * limit;
+        
+        let whereClause = 'WHERE 1=1';
+        const params = [];
+        
+        if (gameId) {
+            whereClause += ' AND ge.game_id = ?';
+            params.push(gameId);
+        }
+        
+        if (eventType) {
+            whereClause += ' AND ge.event_type = ?';
+            params.push(eventType);
+        }
+        
+        if (startDate) {
+            whereClause += ' AND ge.timestamp >= ?';
+            params.push(startDate);
+        }
+        
+        if (endDate) {
+            whereClause += ' AND ge.timestamp <= ?';
+            params.push(endDate);
+        }
+        
+        const query = `
+            SELECT 
+                ge.*,
+                g.type as game_type,
+                g.room_id,
+                u.username as host_username
+            FROM game_events ge
+            LEFT JOIN games g ON ge.game_id = g.id
+            LEFT JOIN users u ON g.host_user_id = u.id
+            ${whereClause}
+            ORDER BY ge.timestamp DESC
+            LIMIT ? OFFSET ?
+        `;
+        params.push(parseInt(limit), offset);
+        
+        const events = await new Promise((resolve, reject) => {
+            db.db.all(query, params, (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows.map(row => ({
+                    ...row,
+                    event_data: row.event_data ? JSON.parse(row.event_data) : null
+                })));
+            });
+        });
+        
+        res.json(events);
+    } catch (error) {
+        console.error('Audit events error:', error);
+        res.status(500).json({ error: 'Failed to fetch game events' });
     }
 });
 
@@ -267,6 +495,7 @@ io.on('connection', (socket) => {
                 id: room.id,
                 host: room.host.username,
                 players: room.players.length,
+                spectators: room.spectators.length,
                 maxPlayers: 8
             }));
         
@@ -288,6 +517,7 @@ io.on('connection', (socket) => {
             gameType,
             host: user,
             players: [{ ...user, socketId: socket.id }],
+            spectators: [],
             bots: [],
             started: false,
             gameState: null,
@@ -343,8 +573,100 @@ io.on('connection', (socket) => {
             id: roomId,
             host: room.host.username,
             players: room.players.length,
+            spectators: room.spectators.length,
             maxPlayers: 8
         });
+    });
+
+    socket.on('spectate_room', (data) => {
+        const { roomId } = data;
+        const user = connectedUsers.get(socket.id);
+        const room = gameRooms.get(roomId);
+
+        if (!user) {
+            socket.emit('error', { message: 'Authentication required' });
+            return;
+        }
+
+        if (!room) {
+            socket.emit('error', { message: 'Room not found' });
+            return;
+        }
+
+        // Check if user is already a player in this room
+        const isPlayer = room.players.some(p => p.id === user.id);
+        if (isPlayer) {
+            socket.emit('error', { message: 'Cannot spectate a game you are playing in' });
+            return;
+        }
+
+        // Check if already spectating
+        const alreadySpectating = room.spectators.some(s => s.id === user.id);
+        if (alreadySpectating) {
+            socket.emit('error', { message: 'Already spectating this room' });
+            return;
+        }
+
+        // Add as spectator
+        room.spectators.push({ ...user, socketId: socket.id });
+        socket.join(roomId);
+        socket.join(`${roomId}_spectators`);
+        
+        // Send current game state to spectator (public view only)
+        if (room.gameState) {
+            const spectatorState = room.gameState.getSpectatorState ? 
+                room.gameState.getSpectatorState() : 
+                room.gameState.getPublicState();
+            socket.emit('spectating_started', { roomId, gameState: spectatorState });
+        } else {
+            socket.emit('spectating_started', { roomId, message: 'Waiting for game to start' });
+        }
+        
+        // Notify room and lobby about spectator count update
+        io.to(roomId).emit('spectator_joined', { 
+            username: user.username, 
+            spectatorCount: room.spectators.length 
+        });
+        
+        io.to(`lobby_${room.gameType}`).emit('room_updated', {
+            id: roomId,
+            host: room.host.username,
+            players: room.players.length,
+            spectators: room.spectators.length,
+            maxPlayers: 8
+        });
+    });
+
+    socket.on('leave_spectating', (data) => {
+        const { roomId } = data;
+        const user = connectedUsers.get(socket.id);
+        const room = gameRooms.get(roomId);
+
+        if (!user || !room) return;
+
+        const spectatorIndex = room.spectators.findIndex(s => s.id === user.id);
+        if (spectatorIndex !== -1) {
+            room.spectators.splice(spectatorIndex, 1);
+            socket.leave(roomId);
+            socket.leave(`${roomId}_spectators`);
+            
+            // Notify room about spectator leaving
+            io.to(roomId).emit('spectator_left', { 
+                username: user.username, 
+                spectatorCount: room.spectators.length 
+            });
+            
+            // Update lobby
+            io.to(`lobby_${room.gameType}`).emit('room_updated', {
+                id: roomId,
+                host: room.host.username,
+                players: room.players.length,
+                spectators: room.spectators.length,
+                maxPlayers: 8
+            });
+            
+            socket.emit('spectating_ended', { roomId });
+        }
     });
 
     socket.on('start_game', (data) => {
@@ -414,7 +736,13 @@ io.on('connection', (socket) => {
             // Update connected user balance
             connectedUsers.get(socket.id).balance = newBalance;
             
-            io.to(roomId).emit('game_updated', room.gameState.getPublicState());
+            // Send updates to players and spectators
+            const publicState = room.gameState.getPublicState();
+            const spectatorState = room.gameState.getSpectatorState ? 
+                room.gameState.getSpectatorState() : publicState;
+            
+            io.to(roomId).emit('game_updated', publicState);
+            io.to(`${roomId}_spectators`).emit('game_updated', spectatorState);
         } else {
             socket.emit('error', { message: 'Failed to place bet' });
         }
@@ -429,7 +757,12 @@ io.on('connection', (socket) => {
 
         const success = room.gameState.hit(user.id);
         if (success) {
-            io.to(roomId).emit('game_updated', room.gameState.getPublicState());
+            const publicState = room.gameState.getPublicState();
+            const spectatorState = room.gameState.getSpectatorState ? 
+                room.gameState.getSpectatorState() : publicState;
+            
+            io.to(roomId).emit('game_updated', publicState);
+            io.to(`${roomId}_spectators`).emit('game_updated', spectatorState);
         }
     });
 
@@ -442,7 +775,12 @@ io.on('connection', (socket) => {
 
         const success = room.gameState.stand(user.id);
         if (success) {
-            io.to(roomId).emit('game_updated', room.gameState.getPublicState());
+            const publicState = room.gameState.getPublicState();
+            const spectatorState = room.gameState.getSpectatorState ? 
+                room.gameState.getSpectatorState() : publicState;
+            
+            io.to(roomId).emit('game_updated', publicState);
+            io.to(`${roomId}_spectators`).emit('game_updated', spectatorState);
         }
     });
 
@@ -464,7 +802,13 @@ io.on('connection', (socket) => {
             await db.recordTransaction(user.id, null, 'bet', -additionalBet, dbUser.balance, newBalance, `${room.gameType} double down`);
             
             connectedUsers.get(socket.id).balance = newBalance;
-            io.to(roomId).emit('game_updated', room.gameState.getPublicState());
+            
+            const publicState = room.gameState.getPublicState();
+            const spectatorState = room.gameState.getSpectatorState ? 
+                room.gameState.getSpectatorState() : publicState;
+            
+            io.to(roomId).emit('game_updated', publicState);
+            io.to(`${roomId}_spectators`).emit('game_updated', spectatorState);
         }
     });
 
@@ -475,6 +819,8 @@ io.on('connection', (socket) => {
         // Handle player leaving rooms
         for (const [roomId, room] of gameRooms.entries()) {
             const playerIndex = room.players.findIndex(p => p.socketId === socket.id);
+            const spectatorIndex = room.spectators.findIndex(s => s.socketId === socket.id);
+            
             if (playerIndex !== -1) {
                 room.players.splice(playerIndex, 1);
                 
@@ -489,9 +835,29 @@ io.on('connection', (socket) => {
                         id: roomId,
                         host: room.host.username,
                         players: room.players.length,
+                        spectators: room.spectators.length,
                         maxPlayers: 8
                     });
                 }
+                break;
+            } else if (spectatorIndex !== -1) {
+                const spectator = room.spectators[spectatorIndex];
+                room.spectators.splice(spectatorIndex, 1);
+                
+                // Notify room about spectator leaving
+                io.to(roomId).emit('spectator_left', { 
+                    username: spectator.username, 
+                    spectatorCount: room.spectators.length 
+                });
+                
+                // Update lobby
+                io.to(`lobby_${room.gameType}`).emit('room_updated', {
+                    id: roomId,
+                    host: room.host.username,
+                    players: room.players.length,
+                    spectators: room.spectators.length,
+                    maxPlayers: 8
+                });
                 break;
             }
         }

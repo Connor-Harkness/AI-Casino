@@ -243,6 +243,9 @@
                 <div>Welcome, <strong id="username"></strong></div>
                 <div>Balance: $<span id="balance">0</span></div>
                 <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                <div style="margin-top: 10px;">
+                    <a href="/history" style="color: white; text-decoration: none;">📊 Game History</a>
+                </div>
                 <div id="admin-link" class="hidden">
                     <a href="/admin" style="color: white;">Admin Panel</a>
                 </div>
@@ -485,20 +488,33 @@
             alert(error.message);
         });
 
+        socket.on('spectating_started', (data) => {
+            // Redirect to spectate the game
+            window.location.href = `/games/${currentGameType}?room=${data.roomId}&spectate=true`;
+        });
+
         function updateRoomsList(rooms) {
             const roomsHtml = rooms.length > 0 
                 ? rooms.map(room => `
                     <div class="room-item">
                         <div>
                             <strong>${room.host}</strong><br>
-                            Players: ${room.players}/${room.maxPlayers}
+                            Players: ${room.players}/${room.maxPlayers}<br>
+                            ${room.spectators ? `Spectators: ${room.spectators}` : ''}
                         </div>
-                        <button class="btn" onclick="joinRoom('${room.id}')">Join</button>
+                        <div>
+                            <button class="btn" onclick="joinRoom('${room.id}')">Join</button>
+                            <button class="btn btn-secondary" onclick="spectateRoom('${room.id}')">Spectate</button>
+                        </div>
                     </div>
                 `).join('')
                 : '<div>No rooms available</div>';
             
             document.getElementById('room-list').innerHTML = roomsHtml;
+        }
+
+        function spectateRoom(roomId) {
+            socket.emit('spectate_room', { roomId });
         }
 
         // Close modal when clicking outside

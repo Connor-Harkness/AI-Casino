@@ -355,6 +355,25 @@ class PokerGame {
         };
     }
 
+    getSpectatorState() {
+        // Spectators don't see player hands unless the game is finished
+        return {
+            gamePhase: this.gamePhase,
+            pot: this.pot,
+            communityCards: this.communityCards,
+            currentPlayer: this.currentPlayer,
+            lastBet: this.lastBet,
+            players: this.players.map(player => ({
+                id: player.id,
+                username: player.username,
+                hand: this.gamePhase === 'finished' ? this.playerHands[player.id] : null,
+                bet: this.playerBets[player.id],
+                status: this.playerStatus[player.id],
+                result: this.results[player.id]
+            }))
+        };
+    }
+
     // Bot AI
     makeBotAction(botId) {
         const bot = this.players.find(p => p.id === botId);
