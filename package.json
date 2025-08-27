@@ -1,0 +1,23 @@
+{
+  "name": "ai-casino",
+  "version": "1.0.0",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["casino", "poker", "blackjack", "roulette", "multiplayer"],
+  "author": "AI Casino Team",
+  "license": "ISC",
+  "description": "Multiplayer casino games with poker, blackjack, and roulette",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "socket.io": "^4.8.1",
+    "sqlite3": "^5.1.7",
+    "uuid": "^11.1.0"
+  }
+}

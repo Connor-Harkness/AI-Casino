@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Casino</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 3em;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .game-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s, background 0.3s;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .game-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .game-card h3 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+        
+        .game-card p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #ff5252;
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            margin-left: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .leaderboard {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .leaderboard h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 500px;
+            color: white;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .close {
+            color: white;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .room-list {
+            margin: 20px 0;
+        }
+        
+        .room-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        #auth-section {
+            text-align: center;
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .form-group {
+            margin: 20px 0;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Authentication Section -->
+        <div id="auth-section">
+            <h1>Welcome to AI Casino</h1>
+            <div id="login-form">
+                <h3>Login</h3>
+                <div class="form-group">
+                    <input type="text" id="login-username" placeholder="Username" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="login-password" placeholder="Password" required>
+                </div>
+                <button class="btn" onclick="login()">Login</button>
+                <button class="btn btn-secondary" onclick="showRegister()">Register</button>
+            </div>
+            
+            <div id="register-form" class="hidden">
+                <h3>Register</h3>
+                <div class="form-group">
+                    <input type="text" id="register-username" placeholder="Username" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="register-email" placeholder="Email (optional)">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="register-password" placeholder="Password" required>
+                </div>
+                <button class="btn" onclick="register()">Register</button>
+                <button class="btn btn-secondary" onclick="showLogin()">Back to Login</button>
+            </div>
+            <div id="auth-error" class="error"></div>
+        </div>
+
+        <!-- Main Game Section -->
+        <div id="main-section" class="hidden">
+            <div class="header">
+                <h1>🎰 AI Casino 🎰</h1>
+                <p>Choose your game and test your luck!</p>
+            </div>
+
+            <div class="user-info">
+                <div>Welcome, <strong id="username"></strong></div>
+                <div>Balance: $<span id="balance">0</span></div>
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                <div id="admin-link" class="hidden">
+                    <a href="/admin" style="color: white;">Admin Panel</a>
+                </div>
+            </div>
+
+            <div class="game-selection">
+                <div class="game-card" onclick="selectGame('blackjack')">
+                    <h3>🃏 Blackjack</h3>
+                    <p>Beat the dealer with 21!</p>
+                    <button class="btn">Play Now</button>
+                </div>
+                
+                <div class="game-card" onclick="selectGame('roulette')">
+                    <h3>🎡 Roulette</h3>
+                    <p>Spin the wheel of fortune!</p>
+                    <button class="btn">Play Now</button>
+                </div>
+                
+                <div class="game-card" onclick="selectGame('poker')">
+                    <h3>♠️ Poker</h3>
+                    <p>Texas Hold'em Poker!</p>
+                    <button class="btn">Play Now</button>
+                </div>
+            </div>
+
+            <div class="leaderboard">
+                <h3>🏆 Leaderboard</h3>
+                <div id="leaderboard-list">
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Lobby Modal -->
+    <div id="lobby-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeLobby()">&times;</span>
+            <h2 id="lobby-title">Game Lobby</h2>
+            
+            <div class="form-group">
+                <button class="btn" onclick="createRoom()">Create Room</button>
+            </div>
+            
+            <h3>Available Rooms:</h3>
+            <div id="room-list" class="room-list">
+                No rooms available
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = io();
+        let currentUser = null;
+        let currentGameType = null;
+
+        // Check if user is already logged in
+        fetch('/api/user')
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    currentUser = data;
+                    showMainSection();
+                }
+            })
+            .catch(() => {
+                // User not logged in, show auth section
+            });
+
+        function showLogin() {
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('auth-error').textContent = '';
+        }
+
+        function showRegister() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+            document.getElementById('auth-error').textContent = '';
+        }
+
+        async function login() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (!username || !password) {
+                document.getElementById('auth-error').textContent = 'Please fill in all fields';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    currentUser = data.user;
+                    showMainSection();
+                } else {
+                    document.getElementById('auth-error').textContent = data.error;
+                }
+            } catch (error) {
+                document.getElementById('auth-error').textContent = 'Login failed';
+            }
+        }
+
+        async function register() {
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            
+            if (!username || !password) {
+                document.getElementById('auth-error').textContent = 'Username and password are required';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // Get user data and show main section
+                    const userResponse = await fetch('/api/user');
+                    const userData = await userResponse.json();
+                    currentUser = userData;
+                    showMainSection();
+                } else {
+                    document.getElementById('auth-error').textContent = data.error;
+                }
+            } catch (error) {
+                document.getElementById('auth-error').textContent = 'Registration failed';
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                currentUser = null;
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('main-section').classList.add('hidden');
+                showLogin();
+            } catch (error) {
+                console.error('Logout failed');
+            }
+        }
+
+        function showMainSection() {
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('main-section').classList.remove('hidden');
+            
+            // Update user info
+            document.getElementById('username').textContent = currentUser.username;
+            document.getElementById('balance').textContent = currentUser.balance;
+            
+            if (currentUser.isAdmin) {
+                document.getElementById('admin-link').classList.remove('hidden');
+            }
+            
+            // Authenticate with socket
+            socket.emit('authenticate', { userId: currentUser.id });
+            
+            // Load leaderboard
+            loadLeaderboard();
+        }
+
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('/api/leaderboard');
+                const leaderboard = await response.json();
+                
+                const html = leaderboard.map((player, index) => `
+                    <div class="leaderboard-item">
+                        <span>${index + 1}. ${player.username}</span>
+                        <span>$${player.balance}</span>
+                    </div>
+                `).join('');
+                
+                document.getElementById('leaderboard-list').innerHTML = html;
+            } catch (error) {
+                document.getElementById('leaderboard-list').innerHTML = 'Failed to load leaderboard';
+            }
+        }
+
+        function selectGame(gameType) {
+            currentGameType = gameType;
+            document.getElementById('lobby-title').textContent = `${gameType.charAt(0).toUpperCase() + gameType.slice(1)} Lobby`;
+            document.getElementById('lobby-modal').style.display = 'block';
+            
+            // Join game lobby
+            socket.emit('join_lobby', { gameType });
+        }
+
+        function closeLobby() {
+            document.getElementById('lobby-modal').style.display = 'none';
+        }
+
+        function createRoom() {
+            socket.emit('create_room', { gameType: currentGameType });
+        }
+
+        function joinRoom(roomId) {
+            socket.emit('join_room', { roomId });
+        }
+
+        // Socket event listeners
+        socket.on('authenticated', (data) => {
+            console.log('Socket authenticated:', data.success);
+        });
+
+        socket.on('lobby_joined', (data) => {
+            console.log('Joined lobby for', data.gameType);
+        });
+
+        socket.on('rooms_list', (rooms) => {
+            updateRoomsList(rooms);
+        });
+
+        socket.on('room_created', (room) => {
+            updateRoomsList([room]);
+        });
+
+        socket.on('room_updated', (room) => {
+            // Handle room updates
+        });
+
+        socket.on('room_removed', (roomId) => {
+            // Remove room from list
+        });
+
+        socket.on('game_started', (data) => {
+            // Redirect to game page
+            window.location.href = `/games/${data.gameType}?room=${data.roomId}`;
+        });
+
+        socket.on('error', (error) => {
+            alert(error.message);
+        });
+
+        function updateRoomsList(rooms) {
+            const roomsHtml = rooms.length > 0 
+                ? rooms.map(room => `
+                    <div class="room-item">
+                        <div>
+                            <strong>${room.host}</strong><br>
+                            Players: ${room.players}/${room.maxPlayers}
+                        </div>
+                        <button class="btn" onclick="joinRoom('${room.id}')">Join</button>
+                    </div>
+                `).join('')
+                : '<div>No rooms available</div>';
+            
+            document.getElementById('room-list').innerHTML = roomsHtml;
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('lobby-modal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
