@@ -63,6 +63,17 @@ app.get('/admin', requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../client/admin.html'));
 });
 
+app.get('/games/:gameType', (req, res) => {
+    const gameType = req.params.gameType;
+    const validGames = ['blackjack', 'roulette', 'poker'];
+    
+    if (validGames.includes(gameType)) {
+        res.sendFile(path.join(__dirname, `../client/games/${gameType}.html`));
+    } else {
+        res.redirect('/');
+    }
+});
+
 // API Routes
 app.post('/api/register', async (req, res) => {
     try {
@@ -157,6 +168,42 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
         res.json(users);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+app.get('/api/admin/stats', requireAdmin, async (req, res) => {
+    try {
+        // Get various statistics
+        const stats = await new Promise((resolve, reject) => {
+            const queries = {
+                totalUsers: 'SELECT COUNT(*) as count FROM users WHERE is_active = TRUE',
+                totalBalance: 'SELECT SUM(balance) as total FROM users WHERE is_active = TRUE',
+                activeGames: 'SELECT COUNT(*) as count FROM games WHERE ended_at IS NULL',
+                gamesToday: `SELECT COUNT(*) as count FROM games WHERE date(created_at) = date('now')`
+            };
+            
+            const results = {};
+            const promises = Object.entries(queries).map(([key, query]) => {
+                return new Promise((resolve, reject) => {
+                    db.db.get(query, (err, row) => {
+                        if (err) reject(err);
+                        else {
+                            results[key] = row.count || row.total || 0;
+                            resolve();
+                        }
+                    });
+                });
+            });
+            
+            Promise.all(promises)
+                .then(() => resolve(results))
+                .catch(reject);
+        });
+        
+        res.json(stats);
+    } catch (error) {
+        console.error('Stats error:', error);
+        res.status(500).json({ error: 'Failed to fetch statistics' });
     }
 });
 
@@ -337,6 +384,88 @@ io.on('connection', (socket) => {
 
         // Remove from lobby
         io.to(`lobby_${room.gameType}`).emit('room_removed', roomId);
+    });
+
+    // Game action handlers
+    socket.on('place_bet', async (data) => {
+        const { roomId, amount } = data;
+        const user = connectedUsers.get(socket.id);
+        const room = gameRooms.get(roomId);
+
+        if (!user || !room || !room.gameState) {
+            socket.emit('error', { message: 'Invalid game state' });
+            return;
+        }
+
+        // Update user balance in database
+        const dbUser = await db.getUserById(user.id);
+        if (!dbUser || dbUser.balance < amount) {
+            socket.emit('error', { message: 'Insufficient balance' });
+            return;
+        }
+
+        const success = room.gameState.placeBet(user.id, amount);
+        if (success) {
+            // Update balance
+            const newBalance = dbUser.balance - amount;
+            await db.updateUserBalance(user.id, newBalance);
+            await db.recordTransaction(user.id, null, 'bet', -amount, dbUser.balance, newBalance, `${room.gameType} bet`);
+            
+            // Update connected user balance
+            connectedUsers.get(socket.id).balance = newBalance;
+            
+            io.to(roomId).emit('game_updated', room.gameState.getPublicState());
+        } else {
+            socket.emit('error', { message: 'Failed to place bet' });
+        }
+    });
+
+    socket.on('hit', (data) => {
+        const { roomId } = data;
+        const user = connectedUsers.get(socket.id);
+        const room = gameRooms.get(roomId);
+
+        if (!user || !room || !room.gameState) return;
+
+        const success = room.gameState.hit(user.id);
+        if (success) {
+            io.to(roomId).emit('game_updated', room.gameState.getPublicState());
+        }
+    });
+
+    socket.on('stand', (data) => {
+        const { roomId } = data;
+        const user = connectedUsers.get(socket.id);
+        const room = gameRooms.get(roomId);
+
+        if (!user || !room || !room.gameState) return;
+
+        const success = room.gameState.stand(user.id);
+        if (success) {
+            io.to(roomId).emit('game_updated', room.gameState.getPublicState());
+        }
+    });
+
+    socket.on('double_down', async (data) => {
+        const { roomId } = data;
+        const user = connectedUsers.get(socket.id);
+        const room = gameRooms.get(roomId);
+
+        if (!user || !room || !room.gameState) return;
+
+        const dbUser = await db.getUserById(user.id);
+        const success = room.gameState.doubleDown(user.id);
+        
+        if (success && dbUser) {
+            // Handle additional bet for double down
+            const additionalBet = room.gameState.bets[user.id] / 2; // Half of doubled bet
+            const newBalance = dbUser.balance - additionalBet;
+            await db.updateUserBalance(user.id, newBalance);
+            await db.recordTransaction(user.id, null, 'bet', -additionalBet, dbUser.balance, newBalance, `${room.gameType} double down`);
+            
+            connectedUsers.get(socket.id).balance = newBalance;
+            io.to(roomId).emit('game_updated', room.gameState.getPublicState());
+        }
     });
 
     socket.on('disconnect', () => {

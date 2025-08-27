@@ -435,12 +435,8 @@
         }
 
         function selectGame(gameType) {
-            currentGameType = gameType;
-            document.getElementById('lobby-title').textContent = `${gameType.charAt(0).toUpperCase() + gameType.slice(1)} Lobby`;
-            document.getElementById('lobby-modal').style.display = 'block';
-            
-            // Join game lobby
-            socket.emit('join_lobby', { gameType });
+            // For demo purposes, directly go to game page
+            window.location.href = `/games/${gameType}`;
         }
 
         function closeLobby() {

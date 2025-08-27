@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker - AI Casino</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #4A148C 0%, #7B1FA2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .poker-table {
+            background: rgba(0,0,0,0.3);
+            border-radius: 50px;
+            padding: 40px;
+            margin: 20px 0;
+            position: relative;
+            min-height: 400px;
+        }
+        
+        .community-cards {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .community-cards h3 {
+            margin-bottom: 15px;
+        }
+        
+        .cards {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .card {
+            width: 80px;
+            height: 120px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        
+        .card.hearts, .card.diamonds {
+            color: #d32f2f;
+        }
+        
+        .card.clubs, .card.spades {
+            color: #333;
+        }
+        
+        .card.back {
+            background: #1a237e;
+            color: white;
+        }
+        
+        .card-suit {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 12px;
+        }
+        
+        .pot-info {
+            text-align: center;
+            background: rgba(255,215,0,0.2);
+            border: 2px solid gold;
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .pot-amount {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .players-ring {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        .player-seat {
+            position: absolute;
+            width: 180px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .player-seat.current-player {
+            border: 3px solid #ffd700;
+            background: rgba(255,215,0,0.1);
+        }
+        
+        .player-seat.dealer {
+            border-top: 3px solid red;
+        }
+        
+        /* Position players around the table */
+        .player-seat:nth-child(1) { top: 20px; left: 50%; transform: translateX(-50%); }
+        .player-seat:nth-child(2) { top: 20px; right: 20px; }
+        .player-seat:nth-child(3) { top: 50%; right: 20px; transform: translateY(-50%); }
+        .player-seat:nth-child(4) { bottom: 20px; right: 20px; }
+        .player-seat:nth-child(5) { bottom: 20px; left: 50%; transform: translateX(-50%); }
+        .player-seat:nth-child(6) { bottom: 20px; left: 20px; }
+        .player-seat:nth-child(7) { top: 50%; left: 20px; transform: translateY(-50%); }
+        .player-seat:nth-child(8) { top: 20px; left: 20px; }
+        
+        .player-name {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .player-cards {
+            margin: 10px 0;
+        }
+        
+        .player-info {
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        
+        .player-chips {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        
+        .player-bet {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        
+        .player-status {
+            margin-top: 5px;
+            font-size: 0.8em;
+            font-style: italic;
+        }
+        
+        .game-controls {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        
+        .betting-controls {
+            margin: 20px 0;
+        }
+        
+        .betting-controls input {
+            padding: 8px;
+            border-radius: 5px;
+            border: none;
+            width: 100px;
+            margin: 0 10px;
+        }
+        
+        .btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #ff5252;
+        }
+        
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .btn-success {
+            background: #4caf50;
+        }
+        
+        .btn-success:hover {
+            background: #45a049;
+        }
+        
+        .btn-warning {
+            background: #ff9800;
+        }
+        
+        .btn-warning:hover {
+            background: #f57c00;
+        }
+        
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .game-phase {
+            text-align: center;
+            font-size: 1.1em;
+            color: #ffd700;
+            margin: 10px 0;
+        }
+        
+        .hand-ranking {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .results {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .loading {
+            text-align: center;
+            font-size: 1.2em;
+            padding: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>♠️ Texas Hold'em Poker</h1>
+            <p>The ultimate poker experience!</p>
+        </div>
+
+        <div class="game-info">
+            <div>Room: <span id="room-id">Demo Mode</span></div>
+            <div>Balance: $<span id="user-balance">1000</span></div>
+            <div><a href="/" style="color: white;">← Back to Casino</a></div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            Connecting to game...
+        </div>
+
+        <div id="game-content">
+            <!-- Status Message -->
+            <div id="status-message" class="status-message">
+                Welcome to Texas Hold'em Poker! This is a demo version.
+            </div>
+            
+            <div class="game-phase">
+                Current Phase: <span id="game-phase">River</span>
+            </div>
+
+            <!-- Poker Table -->
+            <div class="poker-table">
+                <!-- Community Cards -->
+                <div class="community-cards">
+                    <h3>Community Cards</h3>
+                    <div class="cards">
+                        <div class="card hearts">
+                            <span class="card-suit">♥</span>
+                            A
+                        </div>
+                        <div class="card clubs">
+                            <span class="card-suit">♣</span>
+                            K
+                        </div>
+                        <div class="card diamonds">
+                            <span class="card-suit">♦</span>
+                            Q
+                        </div>
+                        <div class="card spades">
+                            <span class="card-suit">♠</span>
+                            J
+                        </div>
+                        <div class="card hearts">
+                            <span class="card-suit">♥</span>
+                            10
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pot Info -->
+                <div class="pot-info">
+                    <div>Total Pot</div>
+                    <div class="pot-amount">$540</div>
+                    <div>Current Bet: $50</div>
+                </div>
+
+                <!-- Players Ring -->
+                <div class="players-ring">
+                    <div class="player-seat current-player dealer">
+                        <div class="player-name">You 🎯</div>
+                        <div class="player-cards">
+                            <div class="cards">
+                                <div class="card spades">
+                                    <span class="card-suit">♠</span>
+                                    A
+                                </div>
+                                <div class="card hearts">
+                                    <span class="card-suit">♥</span>
+                                    K
+                                </div>
+                            </div>
+                        </div>
+                        <div class="player-info">
+                            <div class="player-chips">$950</div>
+                            <div class="player-bet">Bet: $50</div>
+                        </div>
+                    </div>
+
+                    <div class="player-seat">
+                        <div class="player-name">Bot 1</div>
+                        <div class="player-cards">
+                            <div class="cards">
+                                <div class="card back">?</div>
+                                <div class="card back">?</div>
+                            </div>
+                        </div>
+                        <div class="player-info">
+                            <div class="player-chips">$875</div>
+                            <div class="player-bet">Bet: $50</div>
+                        </div>
+                    </div>
+
+                    <div class="player-seat">
+                        <div class="player-name">Bot 2</div>
+                        <div class="player-cards">
+                            <div class="cards">
+                                <div class="card back">?</div>
+                                <div class="card back">?</div>
+                            </div>
+                        </div>
+                        <div class="player-info">
+                            <div class="player-chips">$790</div>
+                            <div class="player-bet">Bet: $50</div>
+                            <div class="player-status">Folded</div>
+                        </div>
+                    </div>
+
+                    <div class="player-seat">
+                        <div class="player-name">Bot 3</div>
+                        <div class="player-cards">
+                            <div class="cards">
+                                <div class="card back">?</div>
+                                <div class="card back">?</div>
+                            </div>
+                        </div>
+                        <div class="player-info">
+                            <div class="player-chips">$1240</div>
+                            <div class="player-bet">Bet: $100</div>
+                            <div class="player-status">All-in</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Your Hand Ranking -->
+            <div class="hand-ranking">
+                <h3>Your Hand: Royal Flush!</h3>
+                <p>A♠ K♥ with A♥ K♣ Q♦ J♠ 10♥ on the board</p>
+                <p style="color: #ffd700;">Best possible hand! 🎉</p>
+            </div>
+
+            <!-- Game Controls -->
+            <div id="game-controls" class="game-controls">
+                <div class="betting-controls">
+                    <label>Bet Amount:</label>
+                    <input type="number" id="bet-amount" min="10" max="1000" value="50">
+                </div>
+                
+                <button class="btn btn-secondary" onclick="showPokerAction('fold')">Fold</button>
+                <button class="btn" onclick="showPokerAction('call')">Call $50</button>
+                <button class="btn btn-success" onclick="showPokerAction('raise')">Raise</button>
+                <button class="btn btn-warning" onclick="showPokerAction('check')">Check</button>
+            </div>
+
+            <!-- Results -->
+            <div id="results" class="results" style="display: none;">
+                <h3>Hand Results</h3>
+                <div id="results-content">
+                    <div>You win with Royal Flush!</div>
+                    <div>Winnings: +$540</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <p><strong>Demo Mode:</strong> This shows what a Texas Hold'em Poker game would look like. In the full multiplayer version, you would play with real opponents, make strategic decisions, and compete for real money pots!</p>
+                <button class="btn" onclick="showPokerFeatures()">View Features</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/'">Back to Casino</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showPokerAction(action) {
+            const betAmount = document.getElementById('bet-amount').value;
+            let message = '';
+            
+            switch(action) {
+                case 'fold':
+                    message = 'You folded your hand. Better luck next time!';
+                    break;
+                case 'call':
+                    message = 'You called the bet of $50.';
+                    break;
+                case 'raise':
+                    message = `You raised the bet to $${betAmount}.`;
+                    break;
+                case 'check':
+                    message = 'You checked. Action continues.';
+                    break;
+            }
+            
+            document.getElementById('status-message').textContent = message;
+            
+            // Show results after action
+            setTimeout(() => {
+                if (action !== 'fold') {
+                    document.getElementById('results').style.display = 'block';
+                    document.getElementById('status-message').textContent = 'Hand complete!';
+                }
+            }, 2000);
+        }
+        
+        function showPokerFeatures() {
+            alert(`Full Texas Hold'em Poker Features:
+
+🃏 Complete poker gameplay with all betting rounds
+👥 Multiplayer tables (2-8 players)  
+🤖 Smart AI opponents with different playing styles
+💰 Real-time betting with chips and pot management
+🎯 Hand rankings and winner determination
+📊 Player statistics and hand history
+🔄 Multiple betting options (fold, check, call, raise, all-in)
+⏱️ Timed turns and automatic actions
+🏆 Tournament modes and cash games
+📈 Advanced poker analytics
+
+All integrated with the casino's shared balance system!`);
+        }
+        
+        console.log('Poker demo mode loaded');
+    </script>
+</body>
+</html>
