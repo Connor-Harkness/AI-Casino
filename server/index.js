@@ -53,7 +53,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/login.html'));
+    res.redirect('/');
 });
 
 app.get('/admin', requireAuth, (req, res) => {
@@ -714,7 +714,7 @@ io.on('connection', (socket) => {
 
     // Game action handlers
     socket.on('place_bet', async (data) => {
-        const { roomId, amount } = data;
+        const { roomId, amount, betType, value } = data;
         const user = connectedUsers.get(socket.id);
         const room = gameRooms.get(roomId);
 
@@ -730,7 +730,18 @@ io.on('connection', (socket) => {
             return;
         }
 
-        const success = room.gameState.placeBet(user.id, amount);
+        let success = false;
+        
+        // Handle different game types
+        if (room.gameType === 'blackjack') {
+            success = room.gameState.placeBet(user.id, amount);
+        } else if (room.gameType === 'roulette') {
+            success = room.gameState.placeBet(user.id, betType, amount, value);
+        } else if (room.gameType === 'poker') {
+            // Poker betting is handled differently through poker actions
+            success = false; // Use poker actions instead
+        }
+
         if (success) {
             // Update balance
             const newBalance = dbUser.balance - amount;
@@ -747,8 +758,77 @@ io.on('connection', (socket) => {
             
             io.to(roomId).emit('game_updated', publicState);
             io.to(`${roomId}_spectators`).emit('game_updated', spectatorState);
+            
+            socket.emit('bet_placed', { amount, newBalance });
         } else {
             socket.emit('error', { message: 'Failed to place bet' });
+        }
+    });
+
+    // Poker-specific actions
+    socket.on('poker_action', async (data) => {
+        const { roomId, action, amount } = data;
+        const user = connectedUsers.get(socket.id);
+        const room = gameRooms.get(roomId);
+
+        if (!user || !room || !room.gameState || room.gameType !== 'poker') {
+            socket.emit('error', { message: 'Invalid game state' });
+            return;
+        }
+
+        let success = false;
+        const dbUser = await db.getUserById(user.id);
+        
+        switch(action) {
+            case 'fold':
+                success = room.gameState.fold(user.id);
+                break;
+            case 'call':
+                success = room.gameState.call(user.id);
+                break;
+            case 'raise':
+                if (amount && amount <= dbUser.balance) {
+                    success = room.gameState.raise(user.id, amount);
+                    if (success) {
+                        const newBalance = dbUser.balance - amount;
+                        await db.updateUserBalance(user.id, newBalance);
+                        connectedUsers.get(socket.id).balance = newBalance;
+                    }
+                }
+                break;
+            case 'check':
+                success = room.gameState.check(user.id);
+                break;
+            case 'all-in':
+                success = room.gameState.allIn(user.id);
+                if (success) {
+                    const newBalance = 0; // All-in means using all balance
+                    await db.updateUserBalance(user.id, newBalance);
+                    connectedUsers.get(socket.id).balance = newBalance;
+                }
+                break;
+        }
+
+        if (success) {
+            const publicState = room.gameState.getPublicState();
+            const spectatorState = room.gameState.getSpectatorState ? 
+                room.gameState.getSpectatorState() : publicState;
+            
+            io.to(roomId).emit('game_updated', publicState);
+            io.to(`${roomId}_spectators`).emit('game_updated', spectatorState);
+            
+            // Check if it's the next player's turn
+            if (room.gameState.currentPlayer !== undefined) {
+                const currentPlayerId = room.gameState.players[room.gameState.currentPlayer]?.id;
+                if (currentPlayerId) {
+                    io.to(roomId).emit('turn_updated', { 
+                        currentPlayerId: currentPlayerId,
+                        gameState: publicState 
+                    });
+                }
+            }
+        } else {
+            socket.emit('error', { message: 'Invalid action' });
         }
     });
 

@@ -635,24 +635,24 @@
 
         // Poker actions
         function fold() {
-            socket.emit('player_action', { roomId: currentRoom, action: 'fold' });
+            socket.emit('poker_action', { roomId: currentRoom, action: 'fold' });
             document.getElementById('betting-controls').classList.add('hidden');
         }
 
         function call() {
-            socket.emit('player_action', { roomId: currentRoom, action: 'call' });
+            socket.emit('poker_action', { roomId: currentRoom, action: 'call' });
             document.getElementById('betting-controls').classList.add('hidden');
         }
 
         function check() {
-            socket.emit('player_action', { roomId: currentRoom, action: 'check' });
+            socket.emit('poker_action', { roomId: currentRoom, action: 'check' });
             document.getElementById('betting-controls').classList.add('hidden');
         }
 
         function raise() {
             const amount = parseInt(document.getElementById('bet-input').value);
             if (amount && amount >= currentBet * 2) {
-                socket.emit('player_action', { roomId: currentRoom, action: 'raise', amount: amount });
+                socket.emit('poker_action', { roomId: currentRoom, action: 'raise', amount: amount });
                 document.getElementById('betting-controls').classList.add('hidden');
             } else {
                 alert('Please enter a valid raise amount');
@@ -660,7 +660,7 @@
         }
 
         function allIn() {
-            socket.emit('player_action', { roomId: currentRoom, action: 'all-in' });
+            socket.emit('poker_action', { roomId: currentRoom, action: 'all-in' });
             document.getElementById('betting-controls').classList.add('hidden');
         }
 

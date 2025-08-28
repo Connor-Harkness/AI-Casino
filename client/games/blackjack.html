@@ -440,15 +440,15 @@
         }
 
         function hit() {
-            socket.emit('player_action', { roomId: currentRoom, action: 'hit' });
+            socket.emit('hit', { roomId: currentRoom });
         }
 
         function stand() {
-            socket.emit('player_action', { roomId: currentRoom, action: 'stand' });
+            socket.emit('stand', { roomId: currentRoom });
         }
 
         function doubleDown() {
-            socket.emit('player_action', { roomId: currentRoom, action: 'double' });
+            socket.emit('double_down', { roomId: currentRoom });
         }
 
         function leaveRoom() {
