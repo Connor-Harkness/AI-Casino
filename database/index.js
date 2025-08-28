@@ -163,6 +163,18 @@ class Database {
         });
     }
 
+    async getUserCount() {
+        return new Promise((resolve, reject) => {
+            this.db.get(
+                'SELECT COUNT(*) as count FROM users',
+                (err, row) => {
+                    if (err) reject(err);
+                    else resolve(row.count);
+                }
+            );
+        });
+    }
+
     async recordTransaction(userId, gameId, type, amount, balanceBefore, balanceAfter, description = null) {
         return new Promise((resolve, reject) => {
             const stmt = this.db.prepare(`

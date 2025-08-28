@@ -87,12 +87,16 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ error: 'Username and password required' });
         }
 
-        const userId = await db.createUser(username, password, email);
+        // Check if this is the first user - if so, make them admin
+        const userCount = await db.getUserCount();
+        const isFirstUser = userCount === 0;
+
+        const userId = await db.createUser(username, password, email, isFirstUser);
         req.session.userId = userId;
         req.session.username = username;
-        req.session.isAdmin = false;
+        req.session.isAdmin = isFirstUser;
 
-        res.json({ success: true, userId, username });
+        res.json({ success: true, userId, username, isAdmin: isFirstUser });
     } catch (error) {
         console.error('Registration error:', error);
         res.status(400).json({ error: 'Username already exists or invalid data' });
