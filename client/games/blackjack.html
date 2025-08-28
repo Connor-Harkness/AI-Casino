@@ -524,6 +524,13 @@
             console.log('room_created event received:', data);
             currentRoom = data.roomId;
             console.log('currentRoom set to:', currentRoom);
+            
+            // Update URL to include room parameter for persistence
+            const url = new URL(window.location);
+            url.searchParams.set('room', data.roomId);
+            window.history.replaceState({}, '', url);
+            console.log('Updated URL to include room parameter:', url.toString());
+            
             document.getElementById('room-id').textContent = data.roomId.substring(5, 15) + '...';
             document.getElementById('room-selection').classList.add('hidden');
             document.getElementById('game-content').classList.remove('hidden');
@@ -637,50 +644,68 @@
             document.getElementById('game-controls').style.display = 'none';
         }
 
+        // Helper function to get current room ID reliably
+        function getCurrentRoomId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomIdFromUrl = urlParams.get('room');
+            const roomToUse = currentRoom || roomIdFromUrl;
+            console.log('getCurrentRoomId - currentRoom:', currentRoom, 'urlParam:', roomIdFromUrl, 'using:', roomToUse);
+            return roomToUse;
+        }
+
         function showStartButton() {
             document.getElementById('status-message').innerHTML = 
                 'Room created! <button class="btn" onclick="startGame()">Start Game</button>';
         }
 
         function startGame() {
-            console.log('startGame called, currentRoom:', currentRoom);
-            if (!currentRoom) {
+            const roomToUse = getCurrentRoomId();
+            console.log('startGame called, using room:', roomToUse);
+            
+            if (!roomToUse) {
                 console.error('Cannot start game: no current room');
                 alert('Error: No room selected. Please create or join a room first.');
                 return;
             }
-            socket.emit('start_game', { roomId: currentRoom });
+            
+            socket.emit('start_game', { roomId: roomToUse });
         }
 
         function placeBet() {
             const betAmount = parseInt(document.getElementById('bet-input').value);
-            if (betAmount && betAmount >= 10) {
-                socket.emit('place_bet', { roomId: currentRoom, amount: betAmount });
+            const roomId = getCurrentRoomId();
+            if (betAmount && betAmount >= 10 && roomId) {
+                socket.emit('place_bet', { roomId, amount: betAmount });
             } else {
-                alert('Please enter a valid bet amount (minimum $10)');
+                alert('Please enter a valid bet amount (minimum $10) and ensure you are in a room');
             }
         }
 
         function hit() {
-            socket.emit('hit', { roomId: currentRoom });
+            const roomId = getCurrentRoomId();
+            if (roomId) socket.emit('hit', { roomId });
         }
 
         function stand() {
-            socket.emit('stand', { roomId: currentRoom });
+            const roomId = getCurrentRoomId();
+            if (roomId) socket.emit('stand', { roomId });
         }
 
         function doubleDown() {
-            socket.emit('double_down', { roomId: currentRoom });
+            const roomId = getCurrentRoomId();
+            if (roomId) socket.emit('double_down', { roomId });
         }
 
         function leaveRoom() {
-            socket.emit('leave_room', { roomId: currentRoom });
+            const roomId = getCurrentRoomId();
+            if (roomId) socket.emit('leave_room', { roomId });
             location.reload();
         }
 
         function restartGame() {
-            if (currentRoom) {
-                socket.emit('start_game', { roomId: currentRoom });
+            const roomId = getCurrentRoomId();
+            if (roomId) {
+                socket.emit('start_game', { roomId });
                 document.getElementById('betting-section').classList.remove('hidden');
             }
         }

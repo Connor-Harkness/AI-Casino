@@ -633,6 +633,13 @@
             console.log('room_created event received:', data);
             currentRoom = data.roomId;
             console.log('currentRoom set to:', currentRoom);
+            
+            // Update URL to include room parameter for persistence
+            const url = new URL(window.location);
+            url.searchParams.set('room', data.roomId);
+            window.history.replaceState({}, '', url);
+            console.log('Updated URL to include room parameter:', url.toString());
+            
             document.getElementById('room-id').textContent = data.roomId.substring(5, 15) + '...';
             document.getElementById('room-selection').classList.add('hidden');
             document.getElementById('game-content').classList.remove('hidden');
@@ -751,19 +758,31 @@
             document.getElementById('game-controls').classList.remove('hidden');
         }
 
+        // Helper function to get current room ID reliably
+        function getCurrentRoomId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomIdFromUrl = urlParams.get('room');
+            const roomToUse = currentRoom || roomIdFromUrl;
+            console.log('getCurrentRoomId - currentRoom:', currentRoom, 'urlParam:', roomIdFromUrl, 'using:', roomToUse);
+            return roomToUse;
+        }
+
         function showStartButton() {
             document.getElementById('status-message').innerHTML = 
                 'Room created! <button class="btn" onclick="startGame()">Start Game</button>';
         }
 
         function startGame() {
-            console.log('startGame called, currentRoom:', currentRoom);
-            if (!currentRoom) {
+            const roomToUse = getCurrentRoomId();
+            console.log('startGame called, using room:', roomToUse);
+            
+            if (!roomToUse) {
                 console.error('Cannot start game: no current room');
                 alert('Error: No room selected. Please create or join a room first.');
                 return;
             }
-            socket.emit('start_game', { roomId: currentRoom });
+            
+            socket.emit('start_game', { roomId: roomToUse });
         }
 
         function updatePlayersDisplay(players, bots) {
