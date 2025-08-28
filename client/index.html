@@ -394,7 +394,8 @@
             <h2 id="lobby-title">Game Lobby</h2>
             
             <div class="form-group">
-                <button class="btn" onclick="createRoom()">Create Room</button>
+                <button class="btn" onclick="createSoloRoom()">Solo Play</button>
+                <button class="btn btn-secondary" onclick="createRoom()">Create Room</button>
             </div>
             
             <h3>Available Rooms:</h3>
@@ -598,6 +599,10 @@
             socket.emit('create_room', { gameType: currentGameType });
         }
 
+        function createSoloRoom() {
+            socket.emit('create_solo_room', { gameType: currentGameType });
+        }
+
         function joinRoom(roomId) {
             socket.emit('join_room', { roomId });
         }
@@ -643,19 +648,25 @@
 
         function updateRoomsList(rooms) {
             const roomsHtml = rooms.length > 0 
-                ? rooms.map(room => `
-                    <div class="room-item">
-                        <div>
-                            <strong>${room.host}</strong><br>
-                            Players: ${room.players}/${room.maxPlayers}<br>
-                            ${room.spectators ? `Spectators: ${room.spectators}` : ''}
+                ? rooms.map(room => {
+                    const joinButton = room.solo 
+                        ? '<button class="btn" disabled style="opacity: 0.5;" title="Solo room - cannot join">Solo Game</button>'
+                        : `<button class="btn" onclick="joinRoom('${room.id}')">Join</button>`;
+                    
+                    return `
+                        <div class="room-item">
+                            <div>
+                                <strong>${room.host}</strong><br>
+                                Players: ${room.players}/${room.maxPlayers}<br>
+                                ${room.spectators ? `Spectators: ${room.spectators}` : ''}
+                            </div>
+                            <div>
+                                ${joinButton}
+                                <button class="btn btn-secondary" onclick="spectateRoom('${room.id}')">Spectate</button>
+                            </div>
                         </div>
-                        <div>
-                            <button class="btn" onclick="joinRoom('${room.id}')">Join</button>
-                            <button class="btn btn-secondary" onclick="spectateRoom('${room.id}')">Spectate</button>
-                        </div>
-                    </div>
-                `).join('')
+                    `;
+                }).join('')
                 : '<div>No rooms available</div>';
             
             document.getElementById('room-list').innerHTML = roomsHtml;

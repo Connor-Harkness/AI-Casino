@@ -307,9 +307,9 @@ class PokerGame {
             });
             
             const bestHand = handEvaluations[0];
-            const winners = handEvaluations.filter(eval => 
-                eval.hand.ranking === bestHand.hand.ranking && 
-                eval.hand.value === bestHand.hand.value
+            const winners = handEvaluations.filter(evaluation => 
+                evaluation.hand.ranking === bestHand.hand.ranking && 
+                evaluation.hand.value === bestHand.hand.value
             );
             
             const winningsPerPlayer = this.pot / winners.length;

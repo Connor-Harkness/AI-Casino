@@ -576,6 +576,88 @@ io.on('connection', (socket) => {
         });
     });
 
+    socket.on('create_solo_room', (data) => {
+        const { gameType } = data;
+        const user = connectedUsers.get(socket.id);
+        
+        console.log('Solo room creation attempt:', { gameType, userId: user?.id, socketId: socket.id });
+
+        if (!user) {
+            console.log('Solo room creation failed - not authenticated:', { socketId: socket.id });
+            socket.emit('error', { message: 'Authentication required' });
+            return;
+        }
+
+        const roomId = `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const room = {
+            id: roomId,
+            gameType,
+            host: user,
+            players: [{ ...user, socketId: socket.id }],
+            spectators: [],
+            bots: [],
+            started: false,
+            gameState: null,
+            createdAt: new Date(),
+            solo: true // Mark as solo room
+        };
+
+        // Add bots immediately for solo play
+        const botsNeeded = Math.min(7, 7); // Add 7 bots for solo play
+        for (let i = 0; i < botsNeeded; i++) {
+            room.bots.push({
+                id: `bot_${i}_${Date.now()}`,
+                username: `Bot ${i + 1}`,
+                balance: 1000,
+                isBot: true
+            });
+        }
+
+        // Start the game immediately
+        room.started = true;
+        room.startedAt = new Date();
+
+        // Initialize game based on type
+        try {
+            const GameModule = require(`../games/${room.gameType}`);
+            room.gameState = new GameModule(room.players, room.bots);
+        } catch (error) {
+            console.error('Failed to initialize game:', error);
+            socket.emit('error', { message: 'Failed to start solo game' });
+            return;
+        }
+
+        gameRooms.set(roomId, room);
+        socket.join(roomId);
+        
+        console.log('Solo room created and started:', { 
+            roomId, 
+            hostId: user.id,
+            hostUsername: user.username,
+            botCount: room.bots.length,
+            socketId: socket.id 
+        });
+        
+        // Emit both room creation and game start events
+        socket.emit('room_created', { roomId, room });
+        socket.emit('game_started', {
+            gameType: room.gameType,
+            roomId: roomId,
+            players: room.players,
+            bots: room.bots,
+            gameState: room.gameState.getPublicState()
+        });
+
+        // Notify lobby that room was created (for spectating)
+        io.to(`lobby_${gameType}`).emit('room_created', {
+            id: roomId,
+            host: user.username + ' (Solo)',
+            players: room.players.length + room.bots.length,
+            maxPlayers: 8,
+            solo: true
+        });
+    });
+
     socket.on('join_room', (data) => {
         const { roomId } = data;
         const user = connectedUsers.get(socket.id);

@@ -375,7 +375,8 @@
         <!-- Room Selection -->
         <div id="room-selection" class="room-controls">
             <h3>Join a Room or Create New</h3>
-            <button class="btn" onclick="createRoom()">Create New Room</button>
+            <button class="btn" onclick="createSoloRoom()">Solo Play</button>
+            <button class="btn btn-secondary" onclick="createRoom()">Create New Room</button>
             <div id="room-list" class="room-list"></div>
         </div>
 
@@ -651,15 +652,21 @@
                 return;
             }
             
-            roomList.innerHTML = rooms.map(room => `
-                <div class="room-item">
-                    <h4>Host: ${room.host}</h4>
-                    <p>Players: ${room.players}/${room.maxPlayers}</p>
-                    <p>Spectators: ${room.spectators}</p>
-                    <button class="btn" onclick="joinRoom('${room.id}')">Join Room</button>
-                    <button class="btn btn-secondary" onclick="spectateRoom('${room.id}')">Spectate</button>
-                </div>
-            `).join('');
+            roomList.innerHTML = rooms.map(room => {
+                const joinButton = room.solo 
+                    ? '<button class="btn" disabled style="opacity: 0.5;" title="Solo room - cannot join">Solo Game</button>'
+                    : `<button class="btn" onclick="joinRoom('${room.id}')">Join Room</button>`;
+                
+                return `
+                    <div class="room-item">
+                        <h4>Host: ${room.host}</h4>
+                        <p>Players: ${room.players}/${room.maxPlayers}</p>
+                        <p>Spectators: ${room.spectators}</p>
+                        ${joinButton}
+                        <button class="btn btn-secondary" onclick="spectateRoom('${room.id}')">Spectate</button>
+                    </div>
+                `;
+            }).join('');
         }
 
         function createRoom() {
@@ -682,6 +689,28 @@
             
             console.log('Emitting create_room event for blackjack');
             socket.emit('create_room', { gameType: 'blackjack' });
+        }
+
+        function createSoloRoom() {
+            console.log('createSoloRoom called - checking authentication status');
+            console.log('Socket connected:', socket?.connected);
+            console.log('Socket authenticated:', isAuthenticated);
+            console.log('Current user:', currentUser);
+            
+            if (!currentUser) {
+                console.error('Cannot create solo room: user not authenticated');
+                alert('Please wait for authentication to complete');
+                return;
+            }
+            
+            if (!isAuthenticated) {
+                console.error('Cannot create solo room: socket not authenticated');
+                alert('Please wait for connection to be established');
+                return;
+            }
+            
+            console.log('Emitting create_solo_room event for blackjack');
+            socket.emit('create_solo_room', { gameType: 'blackjack' });
         }
 
         function joinRoom(roomId) {
