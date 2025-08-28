@@ -570,6 +570,7 @@
         let currentRoom = null;
         let currentPot = 0;
         let currentBet = 0;
+        let isAuthenticated = false; // Track authentication state
 
         // Initialize
         window.onload = async function() {
@@ -610,7 +611,11 @@
 
         // Socket event handlers
         socket.on('authenticated', (data) => {
+            console.log('Authentication response received:', data);
+            isAuthenticated = data.success;
+            
             if (data.success) {
+                console.log('Socket authenticated successfully');
                 // Check if room ID was provided during page load
                 const urlParams = new URLSearchParams(window.location.search);
                 const roomIdFromUrl = urlParams.get('room');
@@ -622,6 +627,9 @@
                     document.getElementById('status-message').textContent = 'Connected! Join or create a room to start playing.';
                     socket.emit('join_lobby', { gameType: 'poker' });
                 }
+            } else {
+                console.error('Socket authentication failed');
+                document.getElementById('status-message').textContent = 'Authentication failed. Please refresh the page.';
             }
         });
 
@@ -630,15 +638,25 @@
         });
 
         socket.on('room_created', (data) => {
-            console.log('room_created event received:', data);
+            console.log('=== room_created event received ===');
+            console.log('Full event data:', data);
+            console.log('Room ID from event:', data.roomId);
+            console.log('Room object from event:', data.room);
+            
             currentRoom = data.roomId;
-            console.log('currentRoom set to:', currentRoom);
+            console.log('currentRoom variable set to:', currentRoom);
+            console.log('typeof currentRoom:', typeof currentRoom);
             
             // Update URL to include room parameter for persistence
             const url = new URL(window.location);
             url.searchParams.set('room', data.roomId);
             window.history.replaceState({}, '', url);
-            console.log('Updated URL to include room parameter:', url.toString());
+            console.log('URL updated to:', url.toString());
+            
+            // Verify the URL parameter was set
+            const urlCheck = new URLSearchParams(window.location.search);
+            const roomIdFromUrlCheck = urlCheck.get('room');
+            console.log('Verification - room ID from URL after update:', roomIdFromUrlCheck);
             
             document.getElementById('room-id').textContent = data.roomId.substring(5, 15) + '...';
             document.getElementById('room-selection').classList.add('hidden');
@@ -646,6 +664,8 @@
             document.getElementById('status-message').textContent = 'Room created! Waiting for players...';
             document.getElementById('game-controls').classList.remove('hidden');
             showStartButton();
+            
+            console.log('=== room_created handler completed ===');
         });
 
         socket.on('room_updated', (room) => {
@@ -734,6 +754,24 @@
         }
 
         function createRoom() {
+            console.log('createRoom called - checking authentication status');
+            console.log('Socket connected:', socket?.connected);
+            console.log('Socket authenticated:', isAuthenticated);
+            console.log('Current user:', currentUser);
+            
+            if (!currentUser) {
+                console.error('Cannot create room: user not authenticated');
+                alert('Please wait for authentication to complete');
+                return;
+            }
+            
+            if (!isAuthenticated) {
+                console.error('Cannot create room: socket not authenticated');
+                alert('Please wait for connection to be established');
+                return;
+            }
+            
+            console.log('Emitting create_room event for poker');
             socket.emit('create_room', { gameType: 'poker' });
         }
 
@@ -773,15 +811,28 @@
         }
 
         function startGame() {
+            console.log('=== startGame called ===');
+            console.log('currentRoom variable:', currentRoom);
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomIdFromUrl = urlParams.get('room');
+            console.log('Room ID from URL:', roomIdFromUrl);
+            
             const roomToUse = getCurrentRoomId();
-            console.log('startGame called, using room:', roomToUse);
+            console.log('getCurrentRoomId() returned:', roomToUse);
+            
+            console.log('Socket connected:', socket?.connected);
+            console.log('Current user:', currentUser);
             
             if (!roomToUse) {
                 console.error('Cannot start game: no current room');
+                console.error('currentRoom:', currentRoom);
+                console.error('roomIdFromUrl:', roomIdFromUrl);
                 alert('Error: No room selected. Please create or join a room first.');
                 return;
             }
             
+            console.log('Emitting start_game with roomId:', roomToUse);
             socket.emit('start_game', { roomId: roomToUse });
         }
 
