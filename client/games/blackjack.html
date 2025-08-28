@@ -471,13 +471,24 @@
                     currentUser = userData;
                     document.getElementById('user-balance').textContent = userData.balance;
                     
+                    // Check if room ID is provided in URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const roomIdFromUrl = urlParams.get('room');
+                    console.log('Room ID from URL:', roomIdFromUrl);
+                    
                     // Use shared socket if authenticated, otherwise authenticate
                     if (window.gameSocket && window.gameSocket.authenticated) {
                         console.log('Using existing authenticated socket connection');
-                        socket.emit('join_lobby', { gameType: 'blackjack' });
+                        if (roomIdFromUrl) {
+                            // Auto-join the room from URL
+                            console.log('Auto-joining room from URL:', roomIdFromUrl);
+                            joinRoom(roomIdFromUrl);
+                        } else {
+                            socket.emit('join_lobby', { gameType: 'blackjack' });
+                        }
                     } else {
                         console.log('Authenticating socket for game');
-                        socket.emit('authenticate', { userId: userData.id });
+                        socket.emit('authenticate', { userId: userData.id, roomId: roomIdFromUrl });
                     }
                 } else {
                     window.location.href = '/login';
@@ -491,8 +502,17 @@
         // Socket event handlers
         socket.on('authenticated', (data) => {
             if (data.success) {
-                document.getElementById('status-message').textContent = 'Connected! Join or create a room to start playing.';
-                socket.emit('join_lobby', { gameType: 'blackjack' });
+                // Check if room ID was provided during page load
+                const urlParams = new URLSearchParams(window.location.search);
+                const roomIdFromUrl = urlParams.get('room');
+                
+                if (roomIdFromUrl) {
+                    console.log('Auto-joining room after authentication:', roomIdFromUrl);
+                    joinRoom(roomIdFromUrl);
+                } else {
+                    document.getElementById('status-message').textContent = 'Connected! Join or create a room to start playing.';
+                    socket.emit('join_lobby', { gameType: 'blackjack' });
+                }
             }
         });
 
@@ -501,7 +521,9 @@
         });
 
         socket.on('room_created', (data) => {
+            console.log('room_created event received:', data);
             currentRoom = data.roomId;
+            console.log('currentRoom set to:', currentRoom);
             document.getElementById('room-id').textContent = data.roomId.substring(5, 15) + '...';
             document.getElementById('room-selection').classList.add('hidden');
             document.getElementById('game-content').classList.remove('hidden');
@@ -596,8 +618,10 @@
         }
 
         function joinRoom(roomId) {
+            console.log('joinRoom called with roomId:', roomId);
             socket.emit('join_room', { roomId });
             currentRoom = roomId;
+            console.log('currentRoom set to:', currentRoom);
             document.getElementById('room-selection').classList.add('hidden');
             document.getElementById('game-content').classList.remove('hidden');
             document.getElementById('room-id').textContent = roomId.substring(5, 15) + '...';
@@ -619,6 +643,12 @@
         }
 
         function startGame() {
+            console.log('startGame called, currentRoom:', currentRoom);
+            if (!currentRoom) {
+                console.error('Cannot start game: no current room');
+                alert('Error: No room selected. Please create or join a room first.');
+                return;
+            }
             socket.emit('start_game', { roomId: currentRoom });
         }
 

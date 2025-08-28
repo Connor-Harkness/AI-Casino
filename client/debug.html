@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Room Issue</title>
+</head>
+<body>
+    <h1>Room Debug Test</h1>
+    <div id="status"></div>
+    <button onclick="testRoomFlow()">Test Room Flow</button>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io('http://localhost:4545');
+        let currentRoom = null;
+        
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML += '<br>' + message;
+            console.log(message);
+        }
+        
+        function testRoomFlow() {
+            updateStatus('Testing room creation flow...');
+            
+            // Step 1: Authenticate
+            socket.emit('authenticate', { userId: 1 });
+            
+            // Step 2: Create room
+            setTimeout(() => {
+                updateStatus('Creating room...');
+                socket.emit('create_room', { gameType: 'blackjack' });
+            }, 1000);
+            
+            // Step 3: Try to start game
+            setTimeout(() => {
+                updateStatus('Attempting to start game with currentRoom: ' + currentRoom);
+                if (currentRoom) {
+                    socket.emit('start_game', { roomId: currentRoom });
+                } else {
+                    updateStatus('ERROR: currentRoom is null/undefined!');
+                }
+            }, 3000);
+        }
+        
+        socket.on('authenticated', (data) => {
+            updateStatus('Authenticated: ' + JSON.stringify(data));
+        });
+        
+        socket.on('room_created', (data) => {
+            updateStatus('room_created received: ' + JSON.stringify(data));
+            currentRoom = data.roomId;
+            updateStatus('currentRoom set to: ' + currentRoom);
+        });
+        
+        socket.on('game_started', (data) => {
+            updateStatus('game_started: ' + JSON.stringify(data));
+        });
+        
+        socket.on('error', (error) => {
+            updateStatus('ERROR: ' + JSON.stringify(error));
+        });
+    </script>
+</body>
+</html>
