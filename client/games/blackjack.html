@@ -531,42 +531,53 @@
         socket.on('room_created', (data) => {
             console.log('=== room_created event received ===');
             console.log('Full event data:', data);
-            console.log('Room ID from event:', data.roomId);
+            console.log('Room ID from event:', data.roomId || data.id);
             console.log('Room object from event:', data.room);
             
-            // Validate that we have a valid room ID
-            if (!data.roomId) {
-                console.error('room_created event missing roomId:', data);
-                alert('Error: Failed to create room. Please try again.');
-                return;
-            }
-            
-            currentRoom = data.roomId;
-            console.log('currentRoom variable set to:', currentRoom);
-            console.log('typeof currentRoom:', typeof currentRoom);
-            
-            // Only update URL if we have a valid room ID (not undefined/null)
-            if (currentRoom && currentRoom !== 'undefined') {
-                const url = new URL(window.location);
-                url.searchParams.set('room', currentRoom);
-                window.history.replaceState({}, '', url);
-                console.log('URL updated to:', url.toString());
+            // Check if this is the direct room creation event (has room property) or lobby notification (no room property)
+            if (data.room) {
+                // This is the direct room creation event for the creator
+                const roomId = data.roomId;
+                console.log('Processing direct room creation event with roomId:', roomId);
                 
-                // Verify the URL parameter was set correctly
-                const urlCheck = new URLSearchParams(window.location.search);
-                const roomIdFromUrlCheck = urlCheck.get('room');
-                console.log('Verification - room ID from URL after update:', roomIdFromUrlCheck);
+                // Validate that we have a valid room ID
+                if (!roomId) {
+                    console.error('room_created event missing roomId:', data);
+                    alert('Error: Failed to create room. Please try again.');
+                    return;
+                }
+                
+                currentRoom = roomId;
+                console.log('currentRoom variable set to:', currentRoom);
+                console.log('typeof currentRoom:', typeof currentRoom);
+                
+                // Only update URL if we have a valid room ID (not undefined/null)
+                if (currentRoom && currentRoom !== 'undefined') {
+                    const url = new URL(window.location);
+                    url.searchParams.set('room', currentRoom);
+                    window.history.replaceState({}, '', url);
+                    console.log('URL updated to:', url.toString());
+                    
+                    // Verify the URL parameter was set correctly
+                    const urlCheck = new URLSearchParams(window.location.search);
+                    const roomIdFromUrlCheck = urlCheck.get('room');
+                    console.log('Verification - room ID from URL after update:', roomIdFromUrlCheck);
+                } else {
+                    console.error('Invalid room ID, not updating URL:', currentRoom);
+                }
+                
+                document.getElementById('room-id').textContent = roomId.substring(5, 15) + '...';
+                document.getElementById('room-selection').classList.add('hidden');
+                document.getElementById('game-content').classList.remove('hidden');
+                document.getElementById('status-message').textContent = 'Room created! Waiting for players...';
+                showStartButton();
+                
+                console.log('=== room_created handler completed ===');
             } else {
-                console.error('Invalid room ID, not updating URL:', currentRoom);
+                // This is the lobby notification event - just update room list
+                console.log('Processing lobby room creation notification with id:', data.id);
+                updateRoomsList([data]);
             }
-            
-            document.getElementById('room-id').textContent = data.roomId.substring(5, 15) + '...';
-            document.getElementById('room-selection').classList.add('hidden');
-            document.getElementById('game-content').classList.remove('hidden');
-            document.getElementById('status-message').textContent = 'Room created! Waiting for players...';
-            showStartButton();
-            
-            console.log('=== room_created handler completed ===');
         });
 
         socket.on('room_updated', (room) => {
