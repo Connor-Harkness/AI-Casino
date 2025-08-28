@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roulette - AI Casino</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .roulette-wheel {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .wheel {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(
+                red 0deg 18deg, black 18deg 36deg, red 36deg 54deg, black 54deg 72deg,
+                red 72deg 90deg, black 90deg 108deg, red 108deg 126deg, black 126deg 144deg,
+                red 144deg 162deg, black 162deg 180deg, red 180deg 198deg, black 198deg 216deg,
+                red 216deg 234deg, black 234deg 252deg, red 252deg 270deg, black 270deg 288deg,
+                red 288deg 306deg, black 306deg 324deg, red 324deg 342deg, black 342deg 360deg
+            );
+            margin: 0 auto;
+            position: relative;
+            transition: transform 3s ease-out;
+        }
+        
+        .wheel-ball {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .winning-number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 24px;
+            min-width: 40px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .betting-table {
+            background: #0F4C2F;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .number-bet {
+            aspect-ratio: 1;
+            border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .number-bet:hover {
+            transform: scale(1.1);
+        }
+        
+        .number-bet.red {
+            background: #d32f2f;
+        }
+        
+        .number-bet.black {
+            background: #333;
+        }
+        
+        .number-bet.green {
+            background: #4caf50;
+        }
+        
+        .number-bet.selected {
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 10px #ffd700;
+        }
+        
+        .outside-bets {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .outside-bet {
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid white;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .outside-bet:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .outside-bet.selected {
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 10px #ffd700;
+        }
+        
+        .betting-controls {
+            text-align: center;
+            margin: 20px 0;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .chip-selector {
+            margin: 20px 0;
+        }
+        
+        .chip {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid white;
+            transition: all 0.2s;
+        }
+        
+        .chip:hover {
+            transform: scale(1.1);
+        }
+        
+        .chip.selected {
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 10px #ffd700;
+        }
+        
+        .chip-10 { background: #ff5722; }
+        .chip-25 { background: #4caf50; }
+        .chip-50 { background: #2196f3; }
+        .chip-100 { background: #9c27b0; }
+        .chip-500 { background: #ff9800; }
+        
+        .spin-timer {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background: #45a049;
+        }
+        
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+        }
+        
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .status-message {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+        
+        .players-bets {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .room-controls {
+            text-align: center;
+            margin: 20px 0;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .room-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .room-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .game-container {
+                padding: 10px;
+            }
+            
+            .game-info {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .game-info span {
+                font-size: 14px;
+                padding: 5px;
+                background: rgba(0,0,0,0.2);
+                border-radius: 5px;
+            }
+            
+            .wheel {
+                width: 150px;
+                height: 150px;
+                margin: 0 auto;
+            }
+            
+            .wheel-result {
+                width: 150px;
+                height: 150px;
+                line-height: 150px;
+                font-size: 24px;
+            }
+            
+            .betting-table {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 3px;
+                font-size: 12px;
+            }
+            
+            .bet-option {
+                padding: 8px 4px;
+                font-size: 11px;
+                min-height: 30px;
+            }
+            
+            .bet-section {
+                padding: 15px 10px;
+            }
+            
+            .chip-selector {
+                flex-wrap: wrap;
+                gap: 5px;
+                justify-content: center;
+            }
+            
+            .chip {
+                width: 40px;
+                height: 40px;
+                font-size: 10px;
+                margin: 2px;
+            }
+            
+            .btn {
+                padding: 10px 16px;
+                font-size: 14px;
+                margin: 3px;
+                display: block;
+                width: 100%;
+                margin: 8px 0;
+            }
+            
+            .game-controls .btn {
+                display: inline-block;
+                width: auto;
+                margin: 5px;
+            }
+            
+            .room-list {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .room-controls {
+                padding: 15px 10px;
+            }
+            
+            .status-message {
+                font-size: 16px;
+                padding: 10px;
+                margin: 15px 0;
+            }
+            
+            h1 {
+                font-size: 28px;
+                margin: 10px 0;
+            }
+            
+            h3 {
+                font-size: 20px;
+                margin: 15px 0 10px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .game-container {
+                padding: 5px;
+            }
+            
+            .wheel {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .wheel-result {
+                width: 120px;
+                height: 120px;
+                line-height: 120px;
+                font-size: 20px;
+            }
+            
+            .betting-table {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 2px;
+                font-size: 10px;
+            }
+            
+            .bet-option {
+                padding: 6px 2px;
+                font-size: 9px;
+                min-height: 25px;
+            }
+            
+            .chip {
+                width: 35px;
+                height: 35px;
+                font-size: 9px;
+                margin: 1px;
+            }
+            
+            .btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .game-info {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>🎰 Roulette</h1>
+            <div class="game-info">
+                <span>Balance: $<span id="user-balance">1000</span></span>
+                <span>Room: <span id="room-id">-</span></span>
+                <span>Phase: <span id="game-phase">Waiting</span></span>
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        <div id="status-message" class="status-message">
+            Connecting to game server...
+        </div>
+
+        <!-- Room Selection -->
+        <div id="room-selection" class="room-controls">
+            <h3>Join a Room or Create New</h3>
+            <button class="btn" onclick="createRoom()">Create New Room</button>
+            <div id="room-list" class="room-list"></div>
+        </div>
+
+        <!-- Game Content (hidden until joined room) -->
+        <div id="game-content" class="hidden">
+            <!-- Roulette Wheel -->
+            <div class="roulette-wheel">
+                <div id="wheel" class="wheel">
+                    <div class="wheel-ball"></div>
+                    <div id="winning-number" class="winning-number hidden">-</div>
+                </div>
+                <div id="spin-timer" class="spin-timer hidden">Spinning...</div>
+            </div>
+
+            <!-- Betting Controls -->
+            <div id="betting-controls" class="betting-controls hidden">
+                <h3>Place Your Bets</h3>
+                
+                <div class="chip-selector">
+                    <h4>Select Chip Value:</h4>
+                    <div class="chip chip-10 selected" onclick="selectChip(10)">$10</div>
+                    <div class="chip chip-25" onclick="selectChip(25)">$25</div>
+                    <div class="chip chip-50" onclick="selectChip(50)">$50</div>
+                    <div class="chip chip-100" onclick="selectChip(100)">$100</div>
+                    <div class="chip chip-500" onclick="selectChip(500)">$500</div>
+                </div>
+
+                <!-- Numbers Grid -->
+                <div class="betting-table">
+                    <div class="numbers-grid" id="numbers-grid"></div>
+                    
+                    <!-- Outside Bets -->
+                    <div class="outside-bets">
+                        <div class="outside-bet" onclick="placeBet('red')">Red</div>
+                        <div class="outside-bet" onclick="placeBet('black')">Black</div>
+                        <div class="outside-bet" onclick="placeBet('odd')">Odd</div>
+                        <div class="outside-bet" onclick="placeBet('even')">Even</div>
+                        <div class="outside-bet" onclick="placeBet('low')">1-18</div>
+                        <div class="outside-bet" onclick="placeBet('high')">19-36</div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="clearBets()">Clear Bets</button>
+                <button class="btn btn-secondary" onclick="confirmBets()">Confirm Bets</button>
+            </div>
+
+            <!-- Players Bets Display -->
+            <div id="players-bets" class="players-bets hidden">
+                <h3>Player Bets</h3>
+                <div id="bets-list"></div>
+            </div>
+
+            <!-- Game Controls -->
+            <div id="game-controls" class="game-controls hidden">
+                <button class="btn btn-secondary" onclick="leaveRoom()">Leave Room</button>
+                <button class="btn btn-danger" onclick="window.location.href='/'">Back to Casino</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Initialize shared socket connection if not already present
+        if (!window.gameSocket) {
+            window.gameSocket = {
+                socket: null,
+                connected: false,
+                authenticated: false,
+                
+                connect() {
+                    if (!this.socket || this.socket.disconnected) {
+                        console.log('Creating new socket connection');
+                        this.socket = io();
+                        this.setupEventHandlers();
+                    }
+                    return this.socket;
+                },
+
+                setupEventHandlers() {
+                    this.socket.on('connect', () => {
+                        console.log('Socket connected:', this.socket.id);
+                        this.connected = true;
+                    });
+
+                    this.socket.on('disconnect', () => {
+                        console.log('Socket disconnected');
+                        this.connected = false;
+                        this.authenticated = false;
+                    });
+
+                    this.socket.on('authenticated', (data) => {
+                        console.log('Socket authenticated:', data.success);
+                        this.authenticated = data.success;
+                    });
+                },
+
+                authenticate(userId) {
+                    if (this.socket && this.connected && !this.authenticated) {
+                        console.log('Authenticating socket with user ID:', userId);
+                        this.socket.emit('authenticate', { userId });
+                    }
+                }
+            };
+        }
+
+        // Use shared socket connection
+        const socket = window.gameSocket.connect();
+        let currentUser = null;
+        let gameState = null;
+        let currentRoom = null;
+        let selectedChip = 10;
+        let myBets = [];
+        let isAuthenticated = false; // Track authentication state
+
+        // Roulette numbers with colors
+        const rouletteNumbers = [
+            {number: 0, color: 'green'},
+            {number: 32, color: 'red'}, {number: 15, color: 'black'}, {number: 19, color: 'red'}, {number: 4, color: 'black'},
+            {number: 21, color: 'red'}, {number: 2, color: 'black'}, {number: 25, color: 'red'}, {number: 17, color: 'black'},
+            {number: 34, color: 'red'}, {number: 6, color: 'black'}, {number: 27, color: 'red'}, {number: 13, color: 'black'},
+            {number: 36, color: 'red'}, {number: 11, color: 'black'}, {number: 30, color: 'red'}, {number: 8, color: 'black'},
+            {number: 23, color: 'red'}, {number: 10, color: 'black'}, {number: 5, color: 'red'}, {number: 24, color: 'black'},
+            {number: 16, color: 'red'}, {number: 33, color: 'black'}, {number: 1, color: 'red'}, {number: 20, color: 'black'},
+            {number: 14, color: 'red'}, {number: 31, color: 'black'}, {number: 9, color: 'red'}, {number: 22, color: 'black'},
+            {number: 18, color: 'red'}, {number: 29, color: 'black'}, {number: 7, color: 'red'}, {number: 28, color: 'black'},
+            {number: 12, color: 'red'}, {number: 35, color: 'black'}, {number: 3, color: 'red'}, {number: 26, color: 'black'}
+        ];
+
+        // Initialize
+        window.onload = async function() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    const userData = await response.json();
+                    currentUser = userData;
+                    document.getElementById('user-balance').textContent = userData.balance;
+                    
+                    // Initialize betting table
+                    initializeBettingTable();
+                    
+                    // Check if room ID is provided in URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const roomIdFromUrl = urlParams.get('room');
+                    console.log('Room ID from URL:', roomIdFromUrl);
+                    
+                    // Use shared socket if authenticated, otherwise authenticate
+                    if (window.gameSocket && window.gameSocket.authenticated) {
+                        console.log('Using existing authenticated socket connection');
+                        if (roomIdFromUrl) {
+                            // Auto-join the room from URL
+                            console.log('Auto-joining room from URL:', roomIdFromUrl);
+                            joinRoom(roomIdFromUrl);
+                        } else {
+                            socket.emit('join_lobby', { gameType: 'roulette' });
+                        }
+                    } else {
+                        console.log('Authenticating socket for game');
+                        socket.emit('authenticate', { userId: userData.id, roomId: roomIdFromUrl });
+                    }
+                } else {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Authentication error:', error);
+                window.location.href = '/login';
+            }
+        };
+
+        // Socket event handlers
+        socket.on('authenticated', (data) => {
+            console.log('Authentication response received:', data);
+            isAuthenticated = data.success;
+            
+            if (data.success) {
+                console.log('Socket authenticated successfully');
+                // Check if room ID was provided during page load
+                const urlParams = new URLSearchParams(window.location.search);
+                const roomIdFromUrl = urlParams.get('room');
+                
+                if (roomIdFromUrl) {
+                    console.log('Auto-joining room after authentication:', roomIdFromUrl);
+                    joinRoom(roomIdFromUrl);
+                } else {
+                    document.getElementById('status-message').textContent = 'Connected! Join or create a room to start playing.';
+                    socket.emit('join_lobby', { gameType: 'roulette' });
+                }
+            } else {
+                console.error('Socket authentication failed');
+                document.getElementById('status-message').textContent = 'Authentication failed. Please refresh the page.';
+            }
+        });
+
+        socket.on('rooms_list', (rooms) => {
+            updateRoomsList(rooms);
+        });
+
+        socket.on('room_created', (data) => {
+            console.log('=== room_created event received ===');
+            console.log('Full event data:', data);
+            console.log('Room ID from event:', data.roomId || data.id);
+            console.log('Room object from event:', data.room);
+            
+            // Check if this is the direct room creation event (has room property) or lobby notification (no room property)
+            if (data.room) {
+                // This is the direct room creation event for the creator
+                const roomId = data.roomId;
+                console.log('Processing direct room creation event with roomId:', roomId);
+                
+                // Validate that we have a valid room ID
+                if (!roomId) {
+                    console.error('room_created event missing roomId:', data);
+                    alert('Error: Failed to create room. Please try again.');
+                    return;
+                }
+                
+                currentRoom = roomId;
+                console.log('currentRoom variable set to:', currentRoom);
+                console.log('typeof currentRoom:', typeof currentRoom);
+                
+                // Only update URL if we have a valid room ID (not undefined/null)
+                if (currentRoom && currentRoom !== 'undefined') {
+                    const url = new URL(window.location);
+                    url.searchParams.set('room', currentRoom);
+                    window.history.replaceState({}, '', url);
+                    console.log('URL updated to:', url.toString());
+                    
+                    // Verify the URL parameter was set correctly
+                    const urlCheck = new URLSearchParams(window.location.search);
+                    const roomIdFromUrlCheck = urlCheck.get('room');
+                    console.log('Verification - room ID from URL after update:', roomIdFromUrlCheck);
+                } else {
+                    console.error('Invalid room ID, not updating URL:', currentRoom);
+                }
+                
+                document.getElementById('room-id').textContent = roomId.substring(5, 15) + '...';
+                document.getElementById('room-selection').classList.add('hidden');
+                document.getElementById('game-content').classList.remove('hidden');
+                document.getElementById('status-message').textContent = 'Room created! Waiting for players...';
+                document.getElementById('game-controls').classList.remove('hidden');
+                showStartButton();
+                
+                console.log('=== room_created handler completed ===');
+            } else {
+                // This is the lobby notification event - just update room list
+                console.log('Processing lobby room creation notification with id:', data.id);
+                updateRoomsList([data]);
+            }
+        });
+
+        socket.on('room_updated', (room) => {
+            updatePlayersDisplay(room.players, room.bots || []);
+        });
+
+        socket.on('game_started', (data) => {
+            gameState = data.gameState;
+            document.getElementById('status-message').textContent = 'Game started! Place your bets.';
+            document.getElementById('betting-controls').classList.remove('hidden');
+            document.getElementById('game-phase').textContent = 'Betting';
+            document.getElementById('players-bets').classList.remove('hidden');
+        });
+
+        socket.on('betting_closed', (data) => {
+            document.getElementById('betting-controls').classList.add('hidden');
+            document.getElementById('status-message').textContent = 'Betting closed! Spinning wheel...';
+            document.getElementById('game-phase').textContent = 'Spinning';
+            document.getElementById('spin-timer').classList.remove('hidden');
+            spinWheel();
+        });
+
+        socket.on('wheel_result', (data) => {
+            gameState = data.gameState;
+            document.getElementById('winning-number').textContent = data.winningNumber;
+            document.getElementById('winning-number').classList.remove('hidden');
+            document.getElementById('spin-timer').classList.add('hidden');
+            document.getElementById('game-phase').textContent = 'Result';
+            
+            // Show results after animation
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = 
+                    `Winning number: ${data.winningNumber} (${data.winningColor})`;
+                showResults(data.results);
+            }, 2000);
+        });
+
+        socket.on('game_finished', (data) => {
+            document.getElementById('game-phase').textContent = 'Finished';
+            document.getElementById('user-balance').textContent = data.newBalance || currentUser.balance;
+            myBets = [];
+            clearBetSelection();
+            
+            // Show restart option after 10 seconds
+            setTimeout(() => {
+                document.getElementById('status-message').innerHTML = 
+                    'Game finished! <button class="btn" onclick="restartGame()">Play Again</button>';
+            }, 10000);
+        });
+
+        socket.on('error', (data) => {
+            alert('Error: ' + data.message);
+        });
+
+        // Game functions
+        function initializeBettingTable() {
+            const numbersGrid = document.getElementById('numbers-grid');
+            
+            // Add green 0 first
+            numbersGrid.innerHTML = '<div class="number-bet green" onclick="placeBet(\'straight\', 0)">0</div>';
+            
+            // Add numbers 1-36
+            for (let i = 1; i <= 36; i++) {
+                const color = getNumberColor(i);
+                const div = document.createElement('div');
+                div.className = `number-bet ${color}`;
+                div.textContent = i;
+                div.onclick = () => placeBet('straight', i);
+                numbersGrid.appendChild(div);
+            }
+        }
+
+        function getNumberColor(number) {
+            if (number === 0) return 'green';
+            const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+            return redNumbers.includes(number) ? 'red' : 'black';
+        }
+
+        function selectChip(value) {
+            selectedChip = value;
+            document.querySelectorAll('.chip').forEach(chip => {
+                chip.classList.remove('selected');
+            });
+            document.querySelector(`.chip-${value}`).classList.add('selected');
+        }
+
+        function placeBet(betType, value = null) {
+            if (selectedChip > currentUser.balance) {
+                alert('Insufficient balance for this bet!');
+                return;
+            }
+
+            const bet = {
+                type: betType,
+                value: value,
+                amount: selectedChip
+            };
+
+            myBets.push(bet);
+            updateBetsDisplay();
+            
+            // Visual feedback
+            if (betType === 'straight') {
+                document.querySelector(`[onclick*="${value}"]`).classList.add('selected');
+            } else {
+                document.querySelector(`[onclick*="${betType}"]`).classList.add('selected');
+            }
+        }
+
+        function clearBets() {
+            myBets = [];
+            clearBetSelection();
+            updateBetsDisplay();
+        }
+
+        function clearBetSelection() {
+            document.querySelectorAll('.selected').forEach(element => {
+                if (!element.classList.contains('chip')) {
+                    element.classList.remove('selected');
+                }
+            });
+        }
+
+        function confirmBets() {
+            if (myBets.length === 0) {
+                alert('Please place at least one bet!');
+                return;
+            }
+
+            // Send all bets to server
+            myBets.forEach(bet => {
+                socket.emit('place_bet', { 
+                    roomId: currentRoom, 
+                    betType: bet.type, 
+                    amount: bet.amount, 
+                    value: bet.value 
+                });
+            });
+
+            document.getElementById('betting-controls').classList.add('hidden');
+            document.getElementById('status-message').textContent = 'Bets placed! Waiting for other players...';
+        }
+
+        function updateBetsDisplay() {
+            const totalBet = myBets.reduce((sum, bet) => sum + bet.amount, 0);
+            document.getElementById('status-message').textContent = `Total bet: $${totalBet}`;
+        }
+
+        function spinWheel() {
+            const wheel = document.getElementById('wheel');
+            const spins = 5 + Math.random() * 5; // 5-10 spins
+            const degrees = spins * 360 + Math.random() * 360;
+            wheel.style.transform = `rotate(${degrees}deg)`;
+        }
+
+        function updateRoomsList(rooms) {
+            const roomList = document.getElementById('room-list');
+            if (rooms.length === 0) {
+                roomList.innerHTML = '<div class="room-item">No active rooms. Create one to start!</div>';
+                return;
+            }
+            
+            roomList.innerHTML = rooms.map(room => `
+                <div class="room-item">
+                    <h4>Host: ${room.host}</h4>
+                    <p>Players: ${room.players}/${room.maxPlayers}</p>
+                    <p>Spectators: ${room.spectators}</p>
+                    <button class="btn" onclick="joinRoom('${room.id}')">Join Room</button>
+                    <button class="btn btn-secondary" onclick="spectateRoom('${room.id}')">Spectate</button>
+                </div>
+            `).join('');
+        }
+
+        function createRoom() {
+            console.log('createRoom called - checking authentication status');
+            console.log('Socket connected:', socket?.connected);
+            console.log('Socket authenticated:', isAuthenticated);
+            console.log('Current user:', currentUser);
+            
+            if (!currentUser) {
+                console.error('Cannot create room: user not authenticated');
+                alert('Please wait for authentication to complete');
+                return;
+            }
+            
+            if (!isAuthenticated) {
+                console.error('Cannot create room: socket not authenticated');
+                alert('Please wait for connection to be established');
+                return;
+            }
+            
+            console.log('Emitting create_room event for roulette');
+            socket.emit('create_room', { gameType: 'roulette' });
+        }
+
+        function joinRoom(roomId) {
+            console.log('joinRoom called with roomId:', roomId);
+            socket.emit('join_room', { roomId });
+            currentRoom = roomId;
+            console.log('currentRoom set to:', currentRoom);
+            document.getElementById('room-selection').classList.add('hidden');
+            document.getElementById('game-content').classList.remove('hidden');
+            document.getElementById('room-id').textContent = roomId.substring(5, 15) + '...';
+            document.getElementById('game-controls').classList.remove('hidden');
+        }
+
+        function spectateRoom(roomId) {
+            socket.emit('spectate_room', { roomId });
+            currentRoom = roomId;
+            document.getElementById('room-selection').classList.add('hidden');
+            document.getElementById('game-content').classList.remove('hidden');
+            document.getElementById('room-id').textContent = roomId.substring(5, 15) + '... (Spectating)';
+            document.getElementById('betting-controls').style.display = 'none';
+            document.getElementById('game-controls').classList.remove('hidden');
+        }
+
+        // Helper function to get current room ID reliably
+        function getCurrentRoomId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomIdFromUrl = urlParams.get('room');
+            
+            // Filter out string 'undefined' values and null/empty values
+            const validCurrentRoom = currentRoom && currentRoom !== 'undefined' ? currentRoom : null;
+            const validUrlRoom = roomIdFromUrl && roomIdFromUrl !== 'undefined' ? roomIdFromUrl : null;
+            
+            const roomToUse = validCurrentRoom || validUrlRoom;
+            
+            console.log('getCurrentRoomId - currentRoom:', currentRoom, 'urlParam:', roomIdFromUrl);
+            console.log('getCurrentRoomId - validCurrentRoom:', validCurrentRoom, 'validUrlRoom:', validUrlRoom, 'using:', roomToUse);
+            
+            return roomToUse;
+        }
+
+        function showStartButton() {
+            document.getElementById('status-message').innerHTML = 
+                'Room created! <button class="btn" onclick="startGame()">Start Game</button>';
+        }
+
+        function startGame() {
+            console.log('=== startGame called ===');
+            console.log('currentRoom variable:', currentRoom);
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomIdFromUrl = urlParams.get('room');
+            console.log('Room ID from URL:', roomIdFromUrl);
+            
+            const roomToUse = getCurrentRoomId();
+            console.log('getCurrentRoomId() returned:', roomToUse);
+            
+            console.log('Socket connected:', socket?.connected);
+            console.log('Current user:', currentUser);
+            
+            if (!roomToUse) {
+                console.error('Cannot start game: no current room');
+                console.error('currentRoom:', currentRoom);
+                console.error('roomIdFromUrl:', roomIdFromUrl);
+                alert('Error: No room selected. Please create or join a room first.');
+                return;
+            }
+            
+            console.log('Emitting start_game with roomId:', roomToUse);
+            socket.emit('start_game', { roomId: roomToUse });
+        }
+
+        function leaveRoom() {
+            socket.emit('leave_room', { roomId: currentRoom });
+            location.reload();
+        }
+
+        function restartGame() {
+            if (currentRoom) {
+                socket.emit('start_game', { roomId: currentRoom });
+                document.getElementById('betting-controls').classList.remove('hidden');
+                document.getElementById('winning-number').classList.add('hidden');
+                clearBets();
+            }
+        }
+
+        function updatePlayersDisplay(players, bots) {
+            // This could show player information if needed
+            // For now, roulette focuses on the betting interface
+        }
+
+        function showResults(results) {
+            let resultText = 'Results: ';
+            for (const playerId in results) {
+                const result = results[playerId];
+                if (playerId === currentUser.id) {
+                    resultText += `You won $${result.totalWinnings} `;
+                    break;
+                }
+            }
+            document.getElementById('status-message').textContent = resultText;
+        }
+    </script>
+</body>
+</html>
