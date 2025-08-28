@@ -520,8 +520,51 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Use shared socket connection if available, otherwise create new one
-        const socket = window.gameSocket ? window.gameSocket.socket : io();
+        // Initialize shared socket connection if not already present
+        if (!window.gameSocket) {
+            window.gameSocket = {
+                socket: null,
+                connected: false,
+                authenticated: false,
+                
+                connect() {
+                    if (!this.socket || this.socket.disconnected) {
+                        console.log('Creating new socket connection');
+                        this.socket = io();
+                        this.setupEventHandlers();
+                    }
+                    return this.socket;
+                },
+
+                setupEventHandlers() {
+                    this.socket.on('connect', () => {
+                        console.log('Socket connected:', this.socket.id);
+                        this.connected = true;
+                    });
+
+                    this.socket.on('disconnect', () => {
+                        console.log('Socket disconnected');
+                        this.connected = false;
+                        this.authenticated = false;
+                    });
+
+                    this.socket.on('authenticated', (data) => {
+                        console.log('Socket authenticated:', data.success);
+                        this.authenticated = data.success;
+                    });
+                },
+
+                authenticate(userId) {
+                    if (this.socket && this.connected && !this.authenticated) {
+                        console.log('Authenticating socket with user ID:', userId);
+                        this.socket.emit('authenticate', { userId });
+                    }
+                }
+            };
+        }
+
+        // Use shared socket connection
+        const socket = window.gameSocket.connect();
         let currentUser = null;
         let gameState = null;
         let currentRoom = null;

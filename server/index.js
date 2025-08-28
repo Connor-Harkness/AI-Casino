@@ -756,6 +756,31 @@ io.on('connection', (socket) => {
 
         console.log('Host validation passed, starting game:', { roomId, hostId: currentUserId });
 
+        // Additional validation - ensure room is in correct state
+        if (room.started) {
+            console.log('Game already started:', { roomId });
+            socket.emit('error', { message: 'Game already started' });
+            return;
+        }
+
+        if (room.players.length === 0) {
+            console.log('No players in room:', { roomId });
+            socket.emit('error', { message: 'No players in room' });
+            return;
+        }
+
+        // Ensure the host is still in the players list
+        const hostInPlayers = room.players.find(p => String(p.id) === currentUserId);
+        if (!hostInPlayers) {
+            console.log('Host not found in players list:', { 
+                roomId, 
+                hostId: currentUserId,
+                players: room.players.map(p => ({ id: p.id, username: p.username }))
+            });
+            socket.emit('error', { message: 'Host not in room players' });
+            return;
+        }
+
         // Fill remaining slots with bots
         const botsNeeded = Math.max(0, Math.min(8 - room.players.length, 7)); // Max 7 bots
         for (let i = 0; i < botsNeeded; i++) {
@@ -971,18 +996,46 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
+        const user = connectedUsers.get(socket.id);
+        if (user) {
+            console.log('Cleaning up user connection:', { userId: user.id, username: user.username, socketId: socket.id });
+        }
         connectedUsers.delete(socket.id);
         
         // Handle player leaving rooms
         for (const [roomId, room] of gameRooms.entries()) {
+            // Handle player disconnection
             const playerIndex = room.players.findIndex(p => p.socketId === socket.id);
             const spectatorIndex = room.spectators.findIndex(s => s.socketId === socket.id);
             
             if (playerIndex !== -1) {
+                const leavingPlayer = room.players[playerIndex];
+                console.log('Player left room:', { 
+                    roomId, 
+                    playerId: leavingPlayer.id, 
+                    playerUsername: leavingPlayer.username,
+                    socketId: socket.id
+                });
+                
                 room.players.splice(playerIndex, 1);
+                
+                // If the host left, assign a new host
+                if (room.host.socketId === socket.id && room.players.length > 0) {
+                    room.host = room.players[0];
+                    console.log('New host assigned:', { 
+                        roomId, 
+                        newHostId: room.host.id, 
+                        newHostUsername: room.host.username 
+                    });
+                    io.to(roomId).emit('host_changed', { 
+                        newHost: room.host.username,
+                        newHostId: room.host.id
+                    });
+                }
                 
                 if (room.players.length === 0) {
                     // Remove empty room
+                    console.log('Removing empty room:', roomId);
                     gameRooms.delete(roomId);
                     io.to(`lobby_${room.gameType}`).emit('room_removed', roomId);
                 } else {
@@ -999,6 +1052,13 @@ io.on('connection', (socket) => {
                 break;
             } else if (spectatorIndex !== -1) {
                 const spectator = room.spectators[spectatorIndex];
+                console.log('Spectator left room:', { 
+                    roomId, 
+                    spectatorId: spectator.id, 
+                    spectatorUsername: spectator.username,
+                    socketId: socket.id
+                });
+                
                 room.spectators.splice(spectatorIndex, 1);
                 
                 // Notify room about spectator leaving
