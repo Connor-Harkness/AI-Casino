@@ -534,20 +534,31 @@
             console.log('Room ID from event:', data.roomId);
             console.log('Room object from event:', data.room);
             
+            // Validate that we have a valid room ID
+            if (!data.roomId) {
+                console.error('room_created event missing roomId:', data);
+                alert('Error: Failed to create room. Please try again.');
+                return;
+            }
+            
             currentRoom = data.roomId;
             console.log('currentRoom variable set to:', currentRoom);
             console.log('typeof currentRoom:', typeof currentRoom);
             
-            // Update URL to include room parameter for persistence
-            const url = new URL(window.location);
-            url.searchParams.set('room', data.roomId);
-            window.history.replaceState({}, '', url);
-            console.log('URL updated to:', url.toString());
-            
-            // Verify the URL parameter was set
-            const urlCheck = new URLSearchParams(window.location.search);
-            const roomIdFromUrlCheck = urlCheck.get('room');
-            console.log('Verification - room ID from URL after update:', roomIdFromUrlCheck);
+            // Only update URL if we have a valid room ID (not undefined/null)
+            if (currentRoom && currentRoom !== 'undefined') {
+                const url = new URL(window.location);
+                url.searchParams.set('room', currentRoom);
+                window.history.replaceState({}, '', url);
+                console.log('URL updated to:', url.toString());
+                
+                // Verify the URL parameter was set correctly
+                const urlCheck = new URLSearchParams(window.location.search);
+                const roomIdFromUrlCheck = urlCheck.get('room');
+                console.log('Verification - room ID from URL after update:', roomIdFromUrlCheck);
+            } else {
+                console.error('Invalid room ID, not updating URL:', currentRoom);
+            }
             
             document.getElementById('room-id').textContent = data.roomId.substring(5, 15) + '...';
             document.getElementById('room-selection').classList.add('hidden');
@@ -686,8 +697,16 @@
         function getCurrentRoomId() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomIdFromUrl = urlParams.get('room');
-            const roomToUse = currentRoom || roomIdFromUrl;
-            console.log('getCurrentRoomId - currentRoom:', currentRoom, 'urlParam:', roomIdFromUrl, 'using:', roomToUse);
+            
+            // Filter out string 'undefined' values and null/empty values
+            const validCurrentRoom = currentRoom && currentRoom !== 'undefined' ? currentRoom : null;
+            const validUrlRoom = roomIdFromUrl && roomIdFromUrl !== 'undefined' ? roomIdFromUrl : null;
+            
+            const roomToUse = validCurrentRoom || validUrlRoom;
+            
+            console.log('getCurrentRoomId - currentRoom:', currentRoom, 'urlParam:', roomIdFromUrl);
+            console.log('getCurrentRoomId - validCurrentRoom:', validCurrentRoom, 'validUrlRoom:', validUrlRoom, 'using:', roomToUse);
+            
             return roomToUse;
         }
 
