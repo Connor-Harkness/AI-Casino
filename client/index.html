@@ -406,7 +406,48 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        let socket = io();
+        // Shared socket connection management
+        window.gameSocket = window.gameSocket || {
+            socket: null,
+            connected: false,
+            authenticated: false,
+            
+            connect() {
+                if (!this.socket || this.socket.disconnected) {
+                    console.log('Creating new socket connection');
+                    this.socket = io();
+                    this.setupEventHandlers();
+                }
+                return this.socket;
+            },
+
+            setupEventHandlers() {
+                this.socket.on('connect', () => {
+                    console.log('Socket connected:', this.socket.id);
+                    this.connected = true;
+                });
+
+                this.socket.on('disconnect', () => {
+                    console.log('Socket disconnected');
+                    this.connected = false;
+                    this.authenticated = false;
+                });
+
+                this.socket.on('authenticated', (data) => {
+                    console.log('Socket authenticated:', data.success);
+                    this.authenticated = data.success;
+                });
+            },
+
+            authenticate(userId) {
+                if (this.socket && this.connected && !this.authenticated) {
+                    console.log('Authenticating socket with user ID:', userId);
+                    this.socket.emit('authenticate', { userId });
+                }
+            }
+        };
+
+        let socket = window.gameSocket.connect();
         let currentUser = null;
         let currentGameType = null;
 
@@ -519,8 +560,8 @@
                 document.getElementById('admin-link').classList.remove('hidden');
             }
             
-            // Authenticate with socket
-            socket.emit('authenticate', { userId: currentUser.id });
+            // Authenticate with socket using shared connection
+            window.gameSocket.authenticate(currentUser.id);
             
             // Load leaderboard
             loadLeaderboard();

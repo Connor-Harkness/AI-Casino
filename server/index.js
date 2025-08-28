@@ -464,17 +464,40 @@ io.on('connection', (socket) => {
 
     socket.on('authenticate', async (data) => {
         try {
+            console.log('Authentication attempt:', { userId: data.userId, socketId: socket.id });
             const user = await db.getUserById(data.userId);
             if (user) {
-                connectedUsers.set(socket.id, {
+                // Check if user is already connected with a different socket
+                const existingConnection = Array.from(connectedUsers.entries()).find(([, userData]) => userData.id === user.id);
+                if (existingConnection) {
+                    console.log('User already connected, updating socket:', { 
+                        userId: user.id,
+                        oldSocketId: existingConnection[0],
+                        newSocketId: socket.id
+                    });
+                    connectedUsers.delete(existingConnection[0]);
+                }
+
+                const userData = {
                     id: user.id,
                     username: user.username,
                     balance: user.balance,
                     isAdmin: user.is_admin
+                };
+                connectedUsers.set(socket.id, userData);
+                console.log('User authenticated successfully:', { 
+                    userId: user.id, 
+                    username: user.username,
+                    socketId: socket.id,
+                    idType: typeof user.id
                 });
                 socket.emit('authenticated', { success: true });
+            } else {
+                console.log('Authentication failed - user not found:', { userId: data.userId, socketId: socket.id });
+                socket.emit('authenticated', { success: false });
             }
         } catch (error) {
+            console.log('Authentication error:', { error: error.message, userId: data.userId, socketId: socket.id });
             socket.emit('authenticated', { success: false });
         }
     });
@@ -510,7 +533,10 @@ io.on('connection', (socket) => {
         const { gameType } = data;
         const user = connectedUsers.get(socket.id);
         
+        console.log('Room creation attempt:', { gameType, userId: user?.id, socketId: socket.id });
+
         if (!user) {
+            console.log('Room creation failed - not authenticated:', { socketId: socket.id });
             socket.emit('error', { message: 'Authentication required' });
             return;
         }
@@ -530,6 +556,15 @@ io.on('connection', (socket) => {
 
         gameRooms.set(roomId, room);
         socket.join(roomId);
+        
+        console.log('Room created successfully:', { 
+            roomId, 
+            hostId: user.id,
+            hostUsername: user.username,
+            hostIdType: typeof user.id,
+            socketId: socket.id 
+        });
+        
         socket.emit('room_created', { roomId, room });
         
         // Notify lobby
@@ -678,17 +713,48 @@ io.on('connection', (socket) => {
         const user = connectedUsers.get(socket.id);
         const room = gameRooms.get(roomId);
 
+        console.log('start_game event received:', { roomId, userId: user?.id, socketId: socket.id });
+
         if (!user || !room) {
+            console.log('start_game validation failed:', { 
+                hasUser: !!user, 
+                hasRoom: !!room, 
+                roomId,
+                socketId: socket.id 
+            });
             socket.emit('error', { message: 'Invalid room or user data' });
             return;
         }
 
-        // Check if the user is the host (compare IDs as strings to ensure consistency)
-        if (String(room.host.id) !== String(user.id)) {
-            console.log('Host check failed:', { hostId: room.host.id, userId: user.id, hostType: typeof room.host.id, userType: typeof user.id });
+        // Enhanced logging for host validation
+        console.log('Host validation check:', {
+            roomHostId: room.host.id,
+            roomHostType: typeof room.host.id,
+            currentUserId: user.id,
+            currentUserType: typeof user.id,
+            roomHostUsername: room.host.username,
+            currentUserUsername: user.username,
+            socketId: socket.id
+        });
+
+        // Check if the user is the host - ensure both IDs are converted to strings for comparison
+        const hostId = String(room.host.id);
+        const currentUserId = String(user.id);
+        
+        if (hostId !== currentUserId) {
+            console.log('Host check failed - not the room host:', { 
+                hostId, 
+                currentUserId,
+                hostUsername: room.host.username,
+                currentUsername: user.username,
+                socketId: socket.id,
+                roomId
+            });
             socket.emit('error', { message: 'Only room host can start the game' });
             return;
         }
+
+        console.log('Host validation passed, starting game:', { roomId, hostId: currentUserId });
 
         // Fill remaining slots with bots
         const botsNeeded = Math.max(0, Math.min(8 - room.players.length, 7)); // Max 7 bots

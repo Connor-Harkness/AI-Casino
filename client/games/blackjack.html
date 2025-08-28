@@ -413,7 +413,8 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+        // Use shared socket connection if available, otherwise create new one
+        const socket = window.gameSocket ? window.gameSocket.socket : io();
         let currentUser = null;
         let gameState = null;
         let currentRoom = null;
@@ -427,8 +428,14 @@
                     currentUser = userData;
                     document.getElementById('user-balance').textContent = userData.balance;
                     
-                    // Authenticate with socket
-                    socket.emit('authenticate', { userId: userData.id });
+                    // Use shared socket if authenticated, otherwise authenticate
+                    if (window.gameSocket && window.gameSocket.authenticated) {
+                        console.log('Using existing authenticated socket connection');
+                        socket.emit('join_lobby', { gameType: 'blackjack' });
+                    } else {
+                        console.log('Authenticating socket for game');
+                        socket.emit('authenticate', { userId: userData.id });
+                    }
                 } else {
                     window.location.href = '/login';
                 }
