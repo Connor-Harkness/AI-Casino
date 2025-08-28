@@ -678,7 +678,14 @@ io.on('connection', (socket) => {
         const user = connectedUsers.get(socket.id);
         const room = gameRooms.get(roomId);
 
-        if (!user || !room || room.host.id !== user.id) {
+        if (!user || !room) {
+            socket.emit('error', { message: 'Invalid room or user data' });
+            return;
+        }
+
+        // Check if the user is the host (compare IDs as strings to ensure consistency)
+        if (String(room.host.id) !== String(user.id)) {
+            console.log('Host check failed:', { hostId: room.host.id, userId: user.id, hostType: typeof room.host.id, userType: typeof user.id });
             socket.emit('error', { message: 'Only room host can start the game' });
             return;
         }
@@ -948,7 +955,7 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4545;
 server.listen(PORT, () => {
     console.log(`AI Casino server running on port ${PORT}`);
 });

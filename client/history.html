@@ -221,6 +221,123 @@
             border-radius: 5px;
             margin: 5px 0;
         }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2.2em;
+            }
+            
+            .filters {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                width: 100%;
+            }
+            
+            .filter-group select,
+            .filter-group input {
+                width: 100%;
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .btn {
+                width: 100%;
+                padding: 12px;
+                margin: 5px 0;
+            }
+            
+            .games-list {
+                gap: 15px;
+            }
+            
+            .game-card {
+                padding: 15px;
+            }
+            
+            .game-card h3 {
+                font-size: 18px;
+            }
+            
+            .game-details {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .detail-item {
+                text-align: center;
+            }
+            
+            .game-events {
+                max-height: none;
+                overflow-y: visible;
+            }
+            
+            .event-item {
+                padding: 10px;
+                margin: 8px 0;
+            }
+            
+            .event-data {
+                padding: 8px;
+                font-size: 12px;
+                word-break: break-all;
+            }
+            
+            .pagination {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .pagination .btn {
+                width: auto;
+                margin: 2px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .header p {
+                font-size: 14px;
+            }
+            
+            .game-card {
+                padding: 10px;
+            }
+            
+            .game-card h3 {
+                font-size: 16px;
+            }
+            
+            .event-item {
+                padding: 8px;
+            }
+            
+            .event-data {
+                font-size: 10px;
+                padding: 6px;
+            }
+            
+            .btn {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>

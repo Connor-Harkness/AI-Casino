@@ -280,6 +280,158 @@
             border-radius: 10px;
             text-align: center;
         }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .game-container {
+                padding: 10px;
+            }
+            
+            .game-info {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .game-info span {
+                font-size: 14px;
+                padding: 5px;
+                background: rgba(0,0,0,0.2);
+                border-radius: 5px;
+            }
+            
+            .wheel {
+                width: 150px;
+                height: 150px;
+                margin: 0 auto;
+            }
+            
+            .wheel-result {
+                width: 150px;
+                height: 150px;
+                line-height: 150px;
+                font-size: 24px;
+            }
+            
+            .betting-table {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 3px;
+                font-size: 12px;
+            }
+            
+            .bet-option {
+                padding: 8px 4px;
+                font-size: 11px;
+                min-height: 30px;
+            }
+            
+            .bet-section {
+                padding: 15px 10px;
+            }
+            
+            .chip-selector {
+                flex-wrap: wrap;
+                gap: 5px;
+                justify-content: center;
+            }
+            
+            .chip {
+                width: 40px;
+                height: 40px;
+                font-size: 10px;
+                margin: 2px;
+            }
+            
+            .btn {
+                padding: 10px 16px;
+                font-size: 14px;
+                margin: 3px;
+                display: block;
+                width: 100%;
+                margin: 8px 0;
+            }
+            
+            .game-controls .btn {
+                display: inline-block;
+                width: auto;
+                margin: 5px;
+            }
+            
+            .room-list {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .room-controls {
+                padding: 15px 10px;
+            }
+            
+            .status-message {
+                font-size: 16px;
+                padding: 10px;
+                margin: 15px 0;
+            }
+            
+            h1 {
+                font-size: 28px;
+                margin: 10px 0;
+            }
+            
+            h3 {
+                font-size: 20px;
+                margin: 15px 0 10px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .game-container {
+                padding: 5px;
+            }
+            
+            .wheel {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .wheel-result {
+                width: 120px;
+                height: 120px;
+                line-height: 120px;
+                font-size: 20px;
+            }
+            
+            .betting-table {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 2px;
+                font-size: 10px;
+            }
+            
+            .bet-option {
+                padding: 6px 2px;
+                font-size: 9px;
+                min-height: 25px;
+            }
+            
+            .chip {
+                width: 35px;
+                height: 35px;
+                font-size: 9px;
+                margin: 1px;
+            }
+            
+            .btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .game-info {
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>

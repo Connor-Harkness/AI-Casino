@@ -259,6 +259,185 @@
         .quick-bet-btn:hover {
             background: rgba(255,255,255,0.3);
         }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .game-container {
+                padding: 10px;
+            }
+            
+            .game-info {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .game-info span {
+                font-size: 14px;
+                padding: 5px;
+                background: rgba(0,0,0,0.2);
+                border-radius: 5px;
+            }
+            
+            .table-container {
+                padding: 15px;
+                overflow-x: auto;
+            }
+            
+            .poker-table {
+                min-width: 300px;
+                padding: 15px;
+            }
+            
+            .community-cards .cards {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 5px;
+            }
+            
+            .card {
+                width: 40px;
+                height: 56px;
+                font-size: 11px;
+                padding: 2px;
+            }
+            
+            .players-section {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .player-area {
+                padding: 10px;
+            }
+            
+            .player-cards .cards {
+                gap: 3px;
+            }
+            
+            .game-controls {
+                padding: 15px 10px;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 8px;
+            }
+            
+            .btn {
+                padding: 10px 16px;
+                font-size: 14px;
+                margin: 3px;
+                flex: 1;
+                min-width: 80px;
+                max-width: 120px;
+            }
+            
+            .betting-controls {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .bet-input {
+                width: 80%;
+                max-width: 200px;
+                margin: 5px 0;
+                font-size: 16px;
+                padding: 12px;
+            }
+            
+            .quick-bets {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px;
+                justify-content: center;
+            }
+            
+            .quick-bet-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+                margin: 2px;
+            }
+            
+            .room-list {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .room-controls {
+                padding: 15px 10px;
+            }
+            
+            .status-message {
+                font-size: 16px;
+                padding: 10px;
+                margin: 15px 0;
+            }
+            
+            h1 {
+                font-size: 28px;
+                margin: 10px 0;
+            }
+            
+            h3 {
+                font-size: 20px;
+                margin: 15px 0 10px;
+            }
+            
+            .pot-amount {
+                font-size: 18px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .game-container {
+                padding: 5px;
+            }
+            
+            .table-container {
+                padding: 10px;
+            }
+            
+            .card {
+                width: 32px;
+                height: 45px;
+                font-size: 9px;
+                padding: 1px;
+            }
+            
+            .btn {
+                padding: 8px 12px;
+                font-size: 12px;
+                min-width: 70px;
+                max-width: 100px;
+            }
+            
+            .bet-input {
+                width: 90%;
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .quick-bet-btn {
+                padding: 4px 8px;
+                font-size: 10px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .game-info {
+                padding: 10px;
+            }
+            
+            .pot-amount {
+                font-size: 16px;
+            }
+            
+            .player-name {
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>

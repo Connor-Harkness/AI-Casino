@@ -196,6 +196,113 @@
             color: #ff6b6b;
             margin: 10px 0;
         }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2.2em;
+            }
+            
+            .user-info {
+                position: relative;
+                top: auto;
+                right: auto;
+                width: 100%;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            
+            .game-selection {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .game-card {
+                padding: 20px;
+            }
+            
+            .game-card h3 {
+                font-size: 22px;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                font-size: 16px;
+                width: 100%;
+                margin: 8px 0;
+            }
+            
+            .leaderboard {
+                margin-top: 30px;
+            }
+            
+            .leaderboard table {
+                font-size: 14px;
+            }
+            
+            .leaderboard th,
+            .leaderboard td {
+                padding: 8px 5px;
+            }
+            
+            .auth-forms {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .form-group input {
+                width: 100%;
+                padding: 12px;
+                font-size: 16px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+                margin-bottom: 15px;
+            }
+            
+            .game-card {
+                padding: 15px;
+            }
+            
+            .game-card h3 {
+                font-size: 18px;
+            }
+            
+            .game-card p {
+                font-size: 14px;
+                line-height: 1.4;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+            
+            .leaderboard table {
+                font-size: 12px;
+            }
+            
+            .leaderboard th,
+            .leaderboard td {
+                padding: 6px 3px;
+            }
+            
+            .user-info {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>

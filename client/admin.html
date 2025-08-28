@@ -331,6 +331,142 @@
             color: #f44336;
             font-weight: bold;
         }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2.2em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+            
+            .stat-card {
+                padding: 15px;
+            }
+            
+            .stat-value {
+                font-size: 1.8em;
+            }
+            
+            .tabs {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .tab {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .filters {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                width: 100%;
+            }
+            
+            .filter-group input,
+            .filter-group select {
+                width: 100%;
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .btn {
+                width: 100%;
+                padding: 12px;
+                margin: 5px 0;
+            }
+            
+            .users-table {
+                overflow-x: auto;
+            }
+            
+            .users-table table {
+                min-width: 600px;
+                font-size: 12px;
+            }
+            
+            .users-table th,
+            .users-table td {
+                padding: 8px 4px;
+                white-space: nowrap;
+            }
+            
+            .audit-table {
+                overflow-x: auto;
+            }
+            
+            .audit-table table {
+                min-width: 800px;
+                font-size: 11px;
+            }
+            
+            .audit-table th,
+            .audit-table td {
+                padding: 6px 3px;
+            }
+            
+            .json-data {
+                font-size: 10px;
+                max-width: 150px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .stat-card {
+                padding: 10px;
+            }
+            
+            .stat-value {
+                font-size: 1.5em;
+            }
+            
+            .users-table table,
+            .audit-table table {
+                font-size: 10px;
+            }
+            
+            .users-table th,
+            .users-table td,
+            .audit-table th,
+            .audit-table td {
+                padding: 4px 2px;
+            }
+            
+            .btn {
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .tab {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
